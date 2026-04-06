@@ -2,7 +2,7 @@ import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 
 const banner = `/**
- * @elementmint/date
+ * @elementmints/date
  * A lightweight, dependency-free, attribute-driven date picker
  * @license MIT
  */`;

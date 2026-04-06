@@ -1,5 +1,5 @@
 // ============================================================================
-// index.ts - Main ESM entry point for @elementmint/date
+// index.ts - Main ESM entry point for @elementmints/date
 // ============================================================================
 //
 // This module re-exports the public API surface of the library.

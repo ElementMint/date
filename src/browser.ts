@@ -1,5 +1,5 @@
 // ============================================================================
-// browser.ts - IIFE / CDN entry point for @elementmint/date
+// browser.ts - IIFE / CDN entry point for @elementmints/date
 // ============================================================================
 //
 // This file is intended to be the entry point for a UMD/IIFE bundle that

@@ -1,4 +1,4 @@
-# Contributing to @elementmint/date
+# Contributing to @elementmints/date
 
 Thank you for your interest in contributing! This guide covers everything you need to get started.
 

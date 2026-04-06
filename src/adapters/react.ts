@@ -64,7 +64,7 @@ const KNOWN_PROPS = new Set([
  * @example
  * ```ts
  * import React from 'react';
- * import { createReactDatePicker } from '@elementmint/date/adapters/react';
+ * import { createReactDatePicker } from '@elementmints/date/adapters/react';
  *
  * const DatePickerInput = createReactDatePicker(React);
  *

@@ -1,9 +1,9 @@
-# @elementmint/date
+# @elementmints/date
 
-[![npm version](https://img.shields.io/npm/v/@elementmint/date)](https://www.npmjs.com/package/@elementmint/date)
+[![npm version](https://img.shields.io/npm/v/@elementmints/date)](https://www.npmjs.com/package/@elementmints/date)
 [![CI](https://github.com/ElementMint/date/actions/workflows/ci.yml/badge.svg)](https://github.com/ElementMint/date/actions/workflows/ci.yml)
-[![bundle size](https://img.shields.io/bundlephobia/minzip/@elementmint/date)](https://bundlephobia.com/package/@elementmint/date)
-[![license](https://img.shields.io/npm/l/@elementmint/date)](https://github.com/ElementMint/date/blob/master/LICENSE)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/@elementmints/date)](https://bundlephobia.com/package/@elementmints/date)
+[![license](https://img.shields.io/npm/l/@elementmints/date)](https://github.com/ElementMint/date/blob/master/LICENSE)
 
 A lightweight (**<10 KB** gzipped), dependency-free, attribute-driven date picker for the web. Drop in a script tag, add `data-datepicker` to an input, and you're done -- no configuration required.
 
@@ -25,8 +25,8 @@ A lightweight (**<10 KB** gzipped), dependency-free, attribute-driven date picke
 The fastest way to get started. Include the script and stylesheet, then add `data-datepicker` to an input:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@elementmint/date/dist/date.min.css">
-<script src="https://cdn.jsdelivr.net/npm/@elementmint/date/dist/iife/date.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@elementmints/date/dist/date.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@elementmints/date/dist/iife/date.min.js"></script>
 
 <input type="text" data-datepicker>
 ```
@@ -36,12 +36,12 @@ That's it. The picker auto-initializes on `DOMContentLoaded`.
 ### NPM
 
 ```bash
-npm install @elementmint/date
+npm install @elementmints/date
 ```
 
 ```js
-import { initAll } from '@elementmint/date';
-import '@elementmint/date/css';
+import { initAll } from '@elementmints/date';
+import '@elementmints/date/css';
 
 // Initialize all [data-datepicker] elements on the page
 initAll();
@@ -50,8 +50,8 @@ initAll();
 Or create instances manually:
 
 ```js
-import { DatePicker } from '@elementmint/date';
-import '@elementmint/date/css';
+import { DatePicker } from '@elementmints/date';
+import '@elementmints/date/css';
 
 const picker = new DatePicker(document.getElementById('my-input'));
 ```
@@ -189,7 +189,7 @@ picker.destroy();
 ### `initAll()` / `destroyAll()`
 
 ```js
-import { initAll, destroyAll, getInstance } from '@elementmint/date';
+import { initAll, destroyAll, getInstance } from '@elementmints/date';
 
 // Initialize all [data-datepicker] elements
 initAll();
@@ -222,7 +222,7 @@ document.querySelector('#my-input').addEventListener('datepicker:change', (e) =>
 The `<date-picker>` custom element is automatically registered when using the IIFE bundle. With ES modules, call `defineElement()` first:
 
 ```js
-import { defineElement } from '@elementmint/date';
+import { defineElement } from '@elementmints/date';
 defineElement();
 ```
 
@@ -238,8 +238,8 @@ The element creates an `<input>` internally and supports the same `data-*` attri
 
 ```jsx
 import React, { useState } from 'react';
-import { createReactDatePicker } from '@elementmint/date/adapters/react';
-import '@elementmint/date/css';
+import { createReactDatePicker } from '@elementmints/date/adapters/react';
+import '@elementmints/date/css';
 
 const DatePickerInput = createReactDatePicker(React);
 
@@ -264,8 +264,8 @@ function App() {
 <script setup>
 import { ref } from 'vue';
 import { defineComponent, h, ref as vRef, onMounted, onBeforeUnmount, watch } from 'vue';
-import { createVueDatePicker } from '@elementmint/date/adapters/vue';
-import '@elementmint/date/css';
+import { createVueDatePicker } from '@elementmints/date/adapters/vue';
+import '@elementmints/date/css';
 
 const DatePickerInput = createVueDatePicker({
   defineComponent, h, ref: vRef, onMounted, onBeforeUnmount, watch,
@@ -283,7 +283,7 @@ const date = ref('');
 
 ```typescript
 import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { createAngularDatePicker } from '@elementmint/date/adapters/angular';
+import { createAngularDatePicker } from '@elementmints/date/adapters/angular';
 
 const { componentClass, metadata } = createAngularDatePicker({
   Component, Input, Output, EventEmitter,

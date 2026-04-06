@@ -1,5 +1,5 @@
 {
-  "name": "@elementmint/date",
+  "name": "@elementmints/date",
   "version": "1.0.0",
   "description": "A lightweight, dependency-free, attribute-driven date picker library",
   "type": "module",
@@ -79,7 +79,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ElementMint/date.git"
+    "url": "git+https://github.com/ElementMint/date.git"
   },
   "bugs": {
     "url": "https://github.com/ElementMint/date/issues"
