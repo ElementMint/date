@@ -152,7 +152,7 @@ npm run test:coverage
 
 ## Pull Request Process
 
-1. **Fork and branch** -- create a feature branch from `main` (e.g. `feat/month-dropdown`).
+1. **Fork and branch** -- create a feature branch from `master` (e.g. `feat/month-dropdown`).
 2. **Make your changes** -- follow the code standards above.
 3. **Write or update tests** -- ensure all new behavior is covered.
 4. **Run the full check suite**:
@@ -160,7 +160,7 @@ npm run test:coverage
    npm run lint && npm run typecheck && npm test && npm run size
    ```
 5. **Commit using Conventional Commits** format.
-6. **Open a pull request** against `main` with a clear description of what changed and why.
+6. **Open a pull request** against `master` with a clear description of what changed and why.
 7. **Address review feedback** -- maintainers may request changes before merging.
 
 ### PR Checklist

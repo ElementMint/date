@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/@elementmint/date)](https://www.npmjs.com/package/@elementmint/date)
 [![CI](https://github.com/ElementMint/date/actions/workflows/ci.yml/badge.svg)](https://github.com/ElementMint/date/actions/workflows/ci.yml)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/@elementmint/date)](https://bundlephobia.com/package/@elementmint/date)
-[![license](https://img.shields.io/npm/l/@elementmint/date)](https://github.com/ElementMint/date/blob/main/LICENSE)
+[![license](https://img.shields.io/npm/l/@elementmint/date)](https://github.com/ElementMint/date/blob/master/LICENSE)
 
 A lightweight (**<10 KB** gzipped), dependency-free, attribute-driven date picker for the web. Drop in a script tag, add `data-datepicker` to an input, and you're done -- no configuration required.
 

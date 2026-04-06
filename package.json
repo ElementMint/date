@@ -1,6 +1,6 @@
 {
   "name": "@elementmint/date",
-  "version": "0.0.0-development",
+  "version": "1.0.0",
   "description": "A lightweight, dependency-free, attribute-driven date picker library",
   "type": "module",
   "main": "dist/cjs/index.cjs",
@@ -138,7 +138,7 @@
   },
   "release": {
     "branches": [
-      "main"
+      "master"
     ],
     "plugins": [
       "@semantic-release/commit-analyzer",
