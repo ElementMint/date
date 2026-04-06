@@ -5,6 +5,15 @@
 /** Output value format */
 export type ValueType = 'iso' | 'epoch' | 'unix';
 
+/** Selection mode */
+export type SelectionMode = 'single' | 'range';
+
+/** Visible input editing mode */
+export type InputMode = 'segmented' | 'native';
+
+/** Analytics integration mode */
+export type AnalyticsMode = 'off' | 'events' | 'datalayer';
+
 /** Visual theme */
 export type Theme = 'light' | 'dark' | 'system';
 
@@ -28,8 +37,17 @@ export interface CalendarDay {
   day: number;
   isToday: boolean;
   isSelected: boolean;
+  isRangeStart: boolean;
+  isRangeEnd: boolean;
+  isInRange: boolean;
   isDisabled: boolean;
   isOtherMonth: boolean;
+}
+
+/** Represents a selected range of dates */
+export interface DateRangeValue {
+  start: Date | null;
+  end: Date | null;
 }
 
 /** Represents a full month calendar grid */
@@ -72,6 +90,12 @@ export interface DatePickerConfig {
   max: string | null;
   /** Output value type */
   valueType: ValueType;
+  /** Single-date picker or hotel-style range picker */
+  selectionMode: SelectionMode;
+  /** Native typing or guided segmented editing */
+  inputMode: InputMode;
+  /** Whether the popup calendar UI is enabled */
+  calendar: boolean;
   /** Locale for month/day names */
   locale: string;
   /** First day of the week (0=Sun, 1=Mon, etc.) */
@@ -106,4 +130,8 @@ export interface DatePickerConfig {
   className: string;
   /** Position of the calendar popup */
   position: 'bottom' | 'top' | 'auto';
+  /** Separator used when displaying a range */
+  rangeSeparator: string;
+  /** Analytics integration strategy */
+  analytics: AnalyticsMode;
 }

@@ -117,6 +117,24 @@ describe('generateMonth', () => {
       const selectedDays = allDays.filter(d => d.isSelected);
       expect(selectedDays).toHaveLength(0);
     });
+
+    it('marks range start, range end, and in-between days', () => {
+      const result = generateMonth(2024, 5, {
+        weekStart: 0,
+        rangeStart: new Date(2024, 5, 10),
+        rangeEnd: new Date(2024, 5, 13),
+      });
+      const allDays = result.days.flat().filter(d => !d.isOtherMonth);
+      const day10 = allDays.find(d => d.day === 10);
+      const day11 = allDays.find(d => d.day === 11);
+      const day13 = allDays.find(d => d.day === 13);
+
+      expect(day10?.isRangeStart).toBe(true);
+      expect(day10?.isSelected).toBe(true);
+      expect(day11?.isInRange).toBe(true);
+      expect(day13?.isRangeEnd).toBe(true);
+      expect(day13?.isSelected).toBe(true);
+    });
   });
 
   describe('disabled dates', () => {

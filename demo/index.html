@@ -3,345 +3,467 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>@elementmints/date - Demo</title>
+  <title>@elementmints/date - Playground Demo</title>
   <link rel="stylesheet" href="./dist/date.min.css">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; }
 
     :root {
-      --page-bg: #f8fafc;
-      --page-text: #1e293b;
-      --card-bg: #ffffff;
-      --card-border: #e2e8f0;
-      --code-bg: #f1f5f9;
-      --accent: #3b82f6;
+      --page-bg: linear-gradient(180deg, #f8fbff 0%, #eef4ff 44%, #f8fafc 100%);
+      --page-text: #142033;
+      --page-muted: #5c6d83;
+      --card-bg: rgba(255, 255, 255, 0.9);
+      --card-border: rgba(148, 163, 184, 0.28);
+      --editor-bg: #0f172a;
+      --editor-text: #dbeafe;
+      --surface-soft: #f8fafc;
+      --accent: #2563eb;
+      --accent-soft: rgba(37, 99, 235, 0.12);
+      --success: #0f766e;
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --page-bg: #0f172a;
+        --page-bg: radial-gradient(circle at top, #172554 0%, #0f172a 48%, #020617 100%);
         --page-text: #e2e8f0;
-        --card-bg: #1e293b;
-        --card-border: #334155;
-        --code-bg: #334155;
+        --page-muted: #94a3b8;
+        --card-bg: rgba(15, 23, 42, 0.82);
+        --card-border: rgba(96, 165, 250, 0.22);
+        --editor-bg: #020617;
+        --editor-text: #bfdbfe;
+        --surface-soft: rgba(15, 23, 42, 0.72);
+        --accent: #60a5fa;
+        --accent-soft: rgba(96, 165, 250, 0.15);
+        --success: #5eead4;
       }
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
+      margin: 0;
+      min-height: 100vh;
+      font-family: "DM Sans", "Segoe UI", sans-serif;
+      line-height: 1.55;
       color: var(--page-text);
       background: var(--page-bg);
-      padding: 2rem 1rem;
+      padding: 32px 18px 56px;
     }
 
-    .container {
-      max-width: 800px;
+    .shell {
+      width: min(1120px, 100%);
       margin: 0 auto;
     }
 
-    header {
-      text-align: center;
-      margin-bottom: 3rem;
+    .hero {
+      padding: 32px;
+      border-radius: 28px;
+      border: 1px solid var(--card-border);
+      background:
+        linear-gradient(135deg, rgba(37, 99, 235, 0.12), transparent 46%),
+        linear-gradient(180deg, var(--card-bg), rgba(255, 255, 255, 0.58));
+      backdrop-filter: blur(18px);
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.14);
+      margin-bottom: 24px;
     }
 
-    header h1 {
-      font-size: 2rem;
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
       font-weight: 700;
-      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
 
-    header p {
-      font-size: 1.1rem;
-      opacity: 0.7;
+    .hero h1 {
+      margin: 18px 0 10px;
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
     }
 
-    .badge-row {
+    .hero p {
+      max-width: 760px;
+      color: var(--page-muted);
+      font-size: 1.05rem;
+      margin: 0;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .hero-chip {
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.55);
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .intro {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .panel {
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      padding: 22px;
+    }
+
+    .panel h2 {
+      margin: 0 0 10px;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+    }
+
+    .panel p {
+      margin: 0;
+      color: var(--page-muted);
+      font-size: 0.95rem;
+    }
+
+    .panel ul {
+      margin: 14px 0 0;
+      padding-left: 18px;
+      color: var(--page-muted);
+    }
+
+    .playgrounds {
+      display: grid;
+      gap: 20px;
+    }
+
+    .playground {
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      overflow: hidden;
+      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.09);
+    }
+
+    .playground-head {
+      padding: 22px 22px 14px;
+      border-bottom: 1px solid var(--card-border);
+      background: linear-gradient(180deg, rgba(37, 99, 235, 0.08), transparent);
+    }
+
+    .playground-head h3 {
+      margin: 0 0 6px;
+      font-size: 1.18rem;
+      letter-spacing: -0.02em;
+    }
+
+    .playground-head p {
+      margin: 0;
+      color: var(--page-muted);
+      font-size: 0.95rem;
+    }
+
+    .playground-body {
+      padding: 18px 22px 22px;
+    }
+
+    .playground-preview {
+      padding: 18px;
+      border-radius: 20px;
+      border: 1px dashed var(--card-border);
+      background: var(--surface-soft);
+      margin-bottom: 14px;
+    }
+
+    .playground-mount {
+      min-height: 78px;
       display: flex;
-      gap: 0.5rem;
-      justify-content: center;
-      margin-top: 1rem;
+      align-items: center;
+      gap: 12px;
       flex-wrap: wrap;
     }
 
-    .badge {
-      display: inline-block;
-      padding: 0.25rem 0.75rem;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      background: var(--accent);
-      color: #fff;
+    .playground-note {
+      margin: 10px 0 0;
+      color: var(--page-muted);
+      font-size: 0.88rem;
     }
 
-    .example {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .example h2 {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-bottom: 0.25rem;
-    }
-
-    .example p {
-      font-size: 0.875rem;
-      opacity: 0.65;
-      margin-bottom: 1rem;
-    }
-
-    .example-input {
-      margin-bottom: 1rem;
-    }
-
-    .example-input input[type="text"] {
-      width: 100%;
-      max-width: 300px;
-      padding: 0.5rem 0.75rem;
-      border: 1px solid var(--card-border);
-      border-radius: 6px;
-      font-size: 0.95rem;
-      background: var(--card-bg);
-      color: var(--page-text);
-    }
-
-    .example-input input[type="text"]:focus {
-      outline: 2px solid var(--accent);
-      outline-offset: 1px;
-    }
-
-    .code-block {
-      background: var(--code-bg);
-      border-radius: 8px;
-      padding: 1rem;
-      overflow-x: auto;
+    .playground-label {
+      display: block;
+      margin-bottom: 8px;
       font-size: 0.8rem;
-      line-height: 1.5;
+      font-weight: 700;
+      color: var(--page-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
 
-    .code-block code {
-      font-family: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
-      white-space: pre;
+    .playground-editor {
+      width: 100%;
+      min-height: 150px;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 18px;
+      background: var(--editor-bg);
+      color: var(--editor-text);
+      padding: 16px;
+      font: 500 0.88rem/1.55 "SFMono-Regular", Consolas, Monaco, monospace;
+      resize: vertical;
+      outline: none;
     }
 
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
+    .playground-editor:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-soft);
     }
 
-    @media (max-width: 640px) {
-      .grid-2 { grid-template-columns: 1fr; }
+    .playground-log {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(15, 23, 42, 0.92);
+      color: #dbeafe;
+      min-height: 120px;
+      font: 500 0.82rem/1.5 "SFMono-Regular", Consolas, Monaco, monospace;
+      white-space: pre-wrap;
+      overflow: auto;
     }
 
-    footer {
-      text-align: center;
-      margin-top: 3rem;
-      padding-top: 2rem;
-      border-top: 1px solid var(--card-border);
-      font-size: 0.85rem;
-      opacity: 0.6;
+    .kbd {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      padding: 3px 7px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.75);
+      font: 700 0.76rem/1 "SFMono-Regular", Consolas, Monaco, monospace;
+      color: var(--page-text);
+      margin: 0 3px;
     }
 
-    footer a {
+    .footer {
+      margin-top: 24px;
+      padding: 22px;
+      border-radius: 20px;
+      border: 1px solid var(--card-border);
+      background: var(--card-bg);
+      color: var(--page-muted);
+      font-size: 0.92rem;
+    }
+
+    .footer a {
       color: var(--accent);
       text-decoration: none;
+    }
+
+    @media (max-width: 860px) {
+      .intro {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>@elementmints/date</h1>
-      <p>A lightweight, dependency-free, attribute-driven date picker</p>
-      <div class="badge-row">
-        <span class="badge">&lt;10 KB gzipped</span>
-        <span class="badge">Zero dependencies</span>
-        <span class="badge">HTML-first API</span>
-        <span class="badge">Accessible</span>
-      </div>
-    </header>
-
-    <!-- Basic -->
-    <section class="example">
-      <h2>Basic Date Picker</h2>
-      <p>Just add <code>data-datepicker</code> to any input. That's it.</p>
-      <div class="example-input">
-        <input type="text" data-datepicker placeholder="Select a date" id="demo-basic">
-      </div>
-      <div class="code-block"><code>&lt;input type="text" data-datepicker placeholder="Select a date"&gt;</code></div>
-    </section>
-
-    <div class="grid-2">
-      <!-- Custom Format -->
-      <section class="example">
-        <h2>Custom Display Format</h2>
-        <p>Use <code>data-format</code> to change how dates are displayed.</p>
-        <div class="example-input">
-          <input type="text" data-datepicker data-format="DD/MM/YYYY" placeholder="DD/MM/YYYY" id="demo-format">
-        </div>
-        <div class="code-block"><code>&lt;input type="text"
-  data-datepicker
-  data-format="DD/MM/YYYY"&gt;</code></div>
-      </section>
-
-      <!-- Min / Max -->
-      <section class="example">
-        <h2>Min &amp; Max Range</h2>
-        <p>Restrict selectable dates with <code>data-min</code> and <code>data-max</code>.</p>
-        <div class="example-input">
-          <input type="text" data-datepicker data-min="2026-01-01" data-max="2026-12-31" placeholder="2026 only" id="demo-range">
-        </div>
-        <div class="code-block"><code>&lt;input type="text"
-  data-datepicker
-  data-min="2026-01-01"
-  data-max="2026-12-31"&gt;</code></div>
-      </section>
-    </div>
-
-    <!-- Dark Theme -->
-    <section class="example">
-      <h2>Dark Theme</h2>
-      <p>Set <code>data-theme="dark"</code> for a dark calendar. Also supports <code>"light"</code> and <code>"system"</code>.</p>
-      <div class="example-input">
-        <input type="text" data-datepicker data-theme="dark" placeholder="Dark theme" id="demo-dark">
-      </div>
-      <div class="code-block"><code>&lt;input type="text" data-datepicker data-theme="dark"&gt;</code></div>
-    </section>
-
-    <div class="grid-2">
-      <!-- Locale: German -->
-      <section class="example">
-        <h2>German Locale</h2>
-        <p>Locale-aware month and day names via <code>Intl.DateTimeFormat</code>.</p>
-        <div class="example-input">
-          <input type="text" data-datepicker data-locale="de-DE" data-format="DD.MM.YYYY" placeholder="TT.MM.JJJJ" id="demo-de">
-        </div>
-        <div class="code-block"><code>&lt;input type="text"
-  data-datepicker
-  data-locale="de-DE"
-  data-format="DD.MM.YYYY"&gt;</code></div>
-      </section>
-
-      <!-- Locale: French -->
-      <section class="example">
-        <h2>French Locale</h2>
-        <p>Supports any BCP 47 locale tag.</p>
-        <div class="example-input">
-          <input type="text" data-datepicker data-locale="fr-FR" data-format="DD/MM/YYYY" placeholder="JJ/MM/AAAA" id="demo-fr">
-        </div>
-        <div class="code-block"><code>&lt;input type="text"
-  data-datepicker
-  data-locale="fr-FR"
-  data-format="DD/MM/YYYY"&gt;</code></div>
-      </section>
-    </div>
-
-    <!-- Validation: Required -->
-    <section class="example">
-      <h2>Required with Validation</h2>
-      <p>Add <code>data-required</code> for form validation. Error messages render automatically.</p>
-      <div class="example-input">
-        <input type="text" data-datepicker data-required data-min="2026-01-01" placeholder="Required field" id="demo-required">
-      </div>
-      <div class="code-block"><code>&lt;input type="text"
-  data-datepicker
-  data-required
-  data-min="2026-01-01"&gt;</code></div>
-    </section>
-
-    <div class="grid-2">
-      <!-- Weekday Only -->
-      <section class="example">
-        <h2>Weekdays Only</h2>
-        <p>Custom rules via <code>data-validate="weekday"</code>.</p>
-        <div class="example-input">
-          <input type="text" data-datepicker data-validate="weekday" placeholder="No weekends" id="demo-weekday">
-        </div>
-        <div class="code-block"><code>&lt;input type="text"
-  data-datepicker
-  data-validate="weekday"&gt;</code></div>
-      </section>
-
-      <!-- Future Only -->
-      <section class="example">
-        <h2>Future Dates Only</h2>
-        <p>Combine rules: <code>data-validate="future"</code>.</p>
-        <div class="example-input">
-          <input type="text" data-datepicker data-validate="future" placeholder="Future dates only" id="demo-future">
-        </div>
-        <div class="code-block"><code>&lt;input type="text"
-  data-datepicker
-  data-validate="future"&gt;</code></div>
-      </section>
-    </div>
-
-    <!-- Disabled Dates -->
-    <section class="example">
-      <h2>Disabled Specific Dates</h2>
-      <p>Pass a comma-separated list via <code>data-disabled-dates</code>.</p>
-      <div class="example-input">
-        <input type="text" data-datepicker data-disabled-dates="2026-12-25,2026-12-26,2026-01-01" placeholder="Holidays disabled" id="demo-disabled">
-      </div>
-      <div class="code-block"><code>&lt;input type="text"
-  data-datepicker
-  data-disabled-dates="2026-12-25,2026-12-26,2026-01-01"&gt;</code></div>
-    </section>
-
-    <!-- Web Component -->
-    <section class="example">
-      <h2>Web Component</h2>
-      <p>Use the <code>&lt;date-picker&gt;</code> custom element for encapsulated usage.</p>
-      <div class="example-input">
-        <date-picker data-format="DD/MM/YYYY" data-theme="system"></date-picker>
-      </div>
-      <div class="code-block"><code>&lt;date-picker
-  data-format="DD/MM/YYYY"
-  data-theme="system"&gt;
-&lt;/date-picker&gt;</code></div>
-    </section>
-
-    <!-- JS API -->
-    <section class="example">
-      <h2>JavaScript API</h2>
-      <p>Programmatic control via the <code>DatePicker</code> class.</p>
-      <div class="example-input">
-        <input type="text" id="demo-api" placeholder="Controlled via JS">
-        <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <button onclick="apiPicker.open()" style="padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--page-text); cursor: pointer;">Open</button>
-          <button onclick="apiPicker.close()" style="padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--page-text); cursor: pointer;">Close</button>
-          <button onclick="apiPicker.setValue('2026-06-15')" style="padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--page-text); cursor: pointer;">Set June 15</button>
-          <button onclick="alert('Value: ' + apiPicker.getValue())" style="padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--page-text); cursor: pointer;">Get Value</button>
-        </div>
-      </div>
-      <div class="code-block"><code>const picker = new DatePicker(document.getElementById('my-input'));
-picker.open();
-picker.setValue('2026-06-15');
-picker.getValue(); // "2026-06-15"
-picker.destroy();</code></div>
-    </section>
-
-    <footer>
+  <div class="shell">
+    <section class="hero">
+      <span class="eyebrow">Live Playground Demo</span>
+      <h1>Build hotel-style ranges, native typing flows, and analytics-ready date inputs.</h1>
       <p>
-        <a href="https://github.com/ElementMint/date">GitHub</a> &middot;
-        <a href="https://www.npmjs.com/package/@elementmints/date">npm</a> &middot;
-        MIT License
+        This page shows the upgraded @elementmints/date picker in realistic product modes.
+        Edit the markup under each example and the preview updates live.
       </p>
-    </footer>
+      <div class="hero-grid">
+        <div class="hero-chip">Single-date segmented input</div>
+        <div class="hero-chip">Hotel booking range selection</div>
+        <div class="hero-chip">Native manual entry mode</div>
+        <div class="hero-chip">Touch swipe month navigation</div>
+        <div class="hero-chip">Analytics event stream</div>
+      </div>
+    </section>
+
+    <section class="intro">
+      <article class="panel">
+        <h2>How To Use This Demo</h2>
+        <p>
+          Each card has a live preview first and a code editor underneath it.
+          Change the HTML, wait a moment, and the date picker re-initializes with your new markup.
+        </p>
+      </article>
+      <article class="panel">
+        <h2>Quick Tips</h2>
+        <ul>
+          <li>Use <span class="kbd">←</span> <span class="kbd">→</span> to move between segments in segmented mode.</li>
+          <li>Swipe left or right on touch devices while the calendar is open to change months.</li>
+          <li>For manual typing, set <code>data-input-mode="native"</code> and <code>data-calendar="false"</code>.</li>
+        </ul>
+      </article>
+    </section>
+
+    <main class="playgrounds">
+      <section class="playground" data-playground>
+        <div class="playground-head">
+          <h3>Segmented Single-Date Picker</h3>
+          <p>Fast guided entry for forms where the calendar is helpful but keyboard input still matters.</p>
+        </div>
+        <div class="playground-body">
+          <div class="playground-preview">
+            <div class="playground-mount"></div>
+            <p class="playground-note">Try keyboarding through the segments, then open the calendar with the toggle.</p>
+          </div>
+          <label class="playground-label" for="editor-basic">Live Markup</label>
+          <textarea id="editor-basic" class="playground-editor">&lt;input
+  type="text"
+  data-datepicker
+  data-format="DD/MM/YYYY"
+  placeholder="Choose a travel date"&gt;</textarea>
+        </div>
+      </section>
+
+      <section class="playground" data-playground>
+        <div class="playground-head">
+          <h3>Hotel Booking Range Picker</h3>
+          <p>Pick check-in and check-out in a single control with hotel-style range selection.</p>
+        </div>
+        <div class="playground-body">
+          <div class="playground-preview">
+            <div class="playground-mount"></div>
+            <p class="playground-note">Click one date for check-in, then a second date for check-out. A later click starts a new stay.</p>
+          </div>
+          <label class="playground-label" for="editor-range">Live Markup</label>
+          <textarea id="editor-range" class="playground-editor">&lt;input
+  type="text"
+  data-datepicker
+  data-selection-mode="range"
+  data-format="DD MMM YYYY"
+  data-range-separator=" to "
+  data-min="2026-01-01"
+  placeholder="Select check-in to check-out"&gt;</textarea>
+        </div>
+      </section>
+
+      <section class="playground" data-playground>
+        <div class="playground-head">
+          <h3>Native Manual Input</h3>
+          <p>Turns off the popup calendar and lets the browser handle cursor movement, backspace, and typing naturally.</p>
+        </div>
+        <div class="playground-body">
+          <div class="playground-preview">
+            <div class="playground-mount"></div>
+            <p class="playground-note">This behaves like a natural text input. Type the date manually and use the arrow keys freely.</p>
+          </div>
+          <label class="playground-label" for="editor-native">Live Markup</label>
+          <textarea id="editor-native" class="playground-editor">&lt;input
+  type="text"
+  data-datepicker
+  data-input-mode="native"
+  data-calendar="false"
+  data-format="DD/MM/YYYY"
+  placeholder="Type 24/12/2026 manually"&gt;</textarea>
+        </div>
+      </section>
+
+      <section class="playground" data-playground data-log-events="true">
+        <div class="playground-head">
+          <h3>Analytics + Touch Playground</h3>
+          <p>Emits analytics events for open, select, range completion, navigation, and swipe gestures.</p>
+        </div>
+        <div class="playground-body">
+          <div class="playground-preview">
+            <div class="playground-mount"></div>
+            <p class="playground-note">Open the calendar and interact with it. On mobile, swipe left or right across the calendar body to change month.</p>
+          </div>
+          <label class="playground-label" for="editor-analytics">Live Markup</label>
+          <textarea id="editor-analytics" class="playground-editor">&lt;input
+  type="text"
+  data-datepicker
+  data-analytics="events"
+  data-format="YYYY-MM-DD"
+  placeholder="Open and interact to see analytics events"&gt;</textarea>
+          <div class="playground-log" aria-live="polite"></div>
+        </div>
+      </section>
+    </main>
+
+    <section class="footer">
+      @elementmints/date demo playground. Source on
+      <a href="https://github.com/ElementMint/date">GitHub</a>
+      and package on
+      <a href="https://www.npmjs.com/package/@elementmints/date">npm</a>.
+    </section>
   </div>
 
   <script type="module">
-    import { DatePicker, initAll, defineElement } from './dist/esm/index.js';
+    import { DatePicker, defineElement } from './dist/esm/index.js';
 
     defineElement();
-    initAll();
 
-    // For the JS API demo, we create an instance manually:
-    window.apiPicker = new DatePicker(document.getElementById('demo-api'));
+    const playgrounds = Array.from(document.querySelectorAll('[data-playground]'));
+
+    function debounce(fn, delay = 250) {
+      let timer = 0;
+      return (...args) => {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => fn(...args), delay);
+      };
+    }
+
+    function destroyInstances(section) {
+      const instances = section._instances || [];
+      instances.forEach((instance) => instance.destroy());
+      section._instances = [];
+    }
+
+    function appendLog(section, payload) {
+      const log = section.querySelector('.playground-log');
+      if (!log) return;
+
+      const stamp = new Date().toLocaleTimeString();
+      const nextLine = `[${stamp}] ${JSON.stringify(payload, null, 2)}`;
+      log.textContent = `${nextLine}\n\n${log.textContent || ''}`.trim();
+    }
+
+    function renderPlayground(section) {
+      const editor = section.querySelector('.playground-editor');
+      const mount = section.querySelector('.playground-mount');
+      const log = section.querySelector('.playground-log');
+
+      if (!editor || !mount) return;
+
+      destroyInstances(section);
+      mount.innerHTML = editor.value.trim();
+
+      if (log) {
+        log.textContent = '';
+      }
+
+      const inputs = Array.from(mount.querySelectorAll('[data-datepicker]'));
+      section._instances = inputs.map((element) => new DatePicker(element));
+    }
+
+    playgrounds.forEach((section) => {
+      const editor = section.querySelector('.playground-editor');
+      const rerender = debounce(() => renderPlayground(section));
+
+      section.addEventListener('datepicker:analytics', (event) => {
+        appendLog(section, event.detail);
+      });
+
+      editor?.addEventListener('input', rerender);
+      renderPlayground(section);
+    });
   </script>
 </body>
 </html>

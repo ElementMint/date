@@ -6,6 +6,7 @@ import type {
   DatePickerConfig,
   CalendarMonth,
   ValidationResult,
+  DateRangeValue,
 } from './core/types';
 import { parseConfig } from './core/config';
 import { parseDate, parseISO } from './core/parser';
@@ -13,6 +14,7 @@ import { formatDate, formatForValue } from './core/formatter';
 import { validateDate } from './core/validator';
 import { generateMonth, offsetMonth } from './core/calendar';
 import { getMonthNames } from './core/locale';
+import { compareDays, toDateOnly } from './core/date-utils';
 import {
   renderCalendar,
   updateMonthsGrid,
@@ -48,15 +50,21 @@ export class DatePicker {
   private events: EventDelegator | null = null;
   private currentMonth: { year: number; month: number };
   private selectedDate: Date | null = null;
+  private rangeStartDate: Date | null = null;
+  private rangeEndDate: Date | null = null;
   private isOpen: boolean = false;
   private destroyed: boolean = false;
   private currentView: CalendarView = 'days';
   private yearRangeStart: number = 0;
+  private touchStartX: number | null = null;
+  private touchStartY: number | null = null;
 
   // Bound listeners for cleanup
   private boundClickOutside: (e: MouseEvent) => void;
   private boundInputChange: () => void;
   private boundToggleClick: (e: MouseEvent) => void;
+  private boundTouchStart: (e: TouchEvent) => void;
+  private boundTouchEnd: (e: TouchEvent) => void;
 
   constructor(element: HTMLElement) {
     if (element instanceof HTMLInputElement) {
@@ -81,6 +89,8 @@ export class DatePicker {
     this.boundClickOutside = this.handleClickOutside.bind(this);
     this.boundInputChange = this.onInputChange.bind(this);
     this.boundToggleClick = this.onToggleClick.bind(this);
+    this.boundTouchStart = this.onTouchStart.bind(this);
+    this.boundTouchEnd = this.onTouchEnd.bind(this);
 
     this.a11y = new A11yManager();
     this.init();
@@ -101,11 +111,29 @@ export class DatePicker {
   }
 
   getValue(): string | null {
+    if (this.config.selectionMode === 'range') {
+      if (!this.rangeStartDate) return null;
+      const start = formatForValue(this.rangeStartDate, this.config.valueType);
+      if (!this.rangeEndDate) return start;
+      const end = formatForValue(this.rangeEndDate, this.config.valueType);
+      return `${start},${end}`;
+    }
+
     if (!this.selectedDate) return null;
     return formatForValue(this.selectedDate, this.config.valueType);
   }
 
   setValue(date: Date | string): void {
+    if (this.config.selectionMode === 'range') {
+      if (typeof date === 'string') {
+        const parsed = this.parseRangeInput(date);
+        if (parsed) {
+          this.setRange(parsed.start, parsed.end);
+        }
+      }
+      return;
+    }
+
     let d: Date | null = null;
     if (date instanceof Date) {
       d = date;
@@ -118,11 +146,48 @@ export class DatePicker {
   }
 
   getDate(): Date | null {
+    if (this.config.selectionMode === 'range') {
+      return this.rangeStartDate ? new Date(this.rangeStartDate.getTime()) : null;
+    }
     return this.selectedDate ? new Date(this.selectedDate.getTime()) : null;
   }
 
   setDate(date: Date): void {
     this.selectDate(date);
+  }
+
+  getRange(): DateRangeValue {
+    return {
+      start: this.rangeStartDate ? new Date(this.rangeStartDate.getTime()) : null,
+      end: this.rangeEndDate ? new Date(this.rangeEndDate.getTime()) : null,
+    };
+  }
+
+  setRange(start: Date | string | null, end: Date | string | null): void {
+    const parsedStart = this.resolveDateLike(start);
+    const parsedEnd = this.resolveDateLike(end);
+
+    this.rangeStartDate = parsedStart ? toDateOnly(parsedStart) : null;
+    this.rangeEndDate = parsedEnd ? toDateOnly(parsedEnd) : null;
+    this.selectedDate = null;
+
+    const visibleDate = this.rangeEndDate ?? this.rangeStartDate;
+    if (visibleDate) {
+      this.currentMonth = {
+        year: visibleDate.getFullYear(),
+        month: visibleDate.getMonth(),
+      };
+      this.yearRangeStart = getYearRangeStart(visibleDate.getFullYear());
+    }
+
+    this.syncVisibleInput();
+    this.updateHiddenInput();
+
+    if (this.isOpen && this.calendarEl) {
+      this.renderCurrentMonth();
+    }
+
+    this.runValidation();
   }
 
   destroy(): void {
@@ -150,6 +215,9 @@ export class DatePicker {
     if (toggle) {
       toggle.removeEventListener('click', this.boundToggleClick as EventListener);
     }
+
+    this.inputEl.removeEventListener('blur', this.boundInputChange);
+    this.inputEl.removeEventListener('input', this.boundInputChange);
 
     if (this.hiddenInput && this.hiddenInput.parentNode) {
       this.hiddenInput.parentNode.removeChild(this.hiddenInput);
@@ -181,14 +249,22 @@ export class DatePicker {
     this.setupAsyncValidator();
 
     if (this.config.value) {
-      const d = parseISO(this.config.value) ??
-        parseDate(this.config.value, this.config.format);
-      if (d) {
-        this.selectedDate = d;
-        this.currentMonth = { year: d.getFullYear(), month: d.getMonth() };
-        this.yearRangeStart = getYearRangeStart(d.getFullYear());
-        this.segmentedInput?.setValue(d);
-        this.updateHiddenInput();
+      if (this.config.selectionMode === 'range') {
+        const parsedRange = this.parseRangeInput(this.config.value);
+        if (parsedRange) {
+          this.setRange(parsedRange.start, parsedRange.end);
+        }
+      } else {
+        const d = parseISO(this.config.value) ??
+          parseDate(this.config.value, this.config.format);
+        if (d) {
+          this.selectedDate = d;
+          this.currentMonth = { year: d.getFullYear(), month: d.getMonth() };
+          this.yearRangeStart = getYearRangeStart(d.getFullYear());
+          this.segmentedInput?.setValue(d);
+          this.syncVisibleInput();
+          this.updateHiddenInput();
+        }
       }
     }
 
@@ -210,7 +286,9 @@ export class DatePicker {
       this.wrapperEl.setAttribute('data-theme', this.config.theme);
     }
 
-    document.addEventListener('mousedown', this.boundClickOutside);
+    if (this.config.calendar) {
+      document.addEventListener('mousedown', this.boundClickOutside);
+    }
   }
 
   private createWrapper(): void {
@@ -232,18 +310,20 @@ export class DatePicker {
     }
     this.wrapperEl.appendChild(this.hiddenInput);
 
-    const toggle = document.createElement('button');
-    toggle.type = 'button';
-    toggle.className = 'dp-toggle';
-    toggle.setAttribute('aria-label', 'Open calendar');
-    toggle.setAttribute('tabindex', '-1');
-    toggle.innerHTML =
-      '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">' +
-      '<path d="M5 1V3M11 1V3M1 6H15M2 3H14C14.5523 3 15 3.44772 15 4V14C15 14.5523 14.5523 15 14 15H2C1.44772 15 1 14.5523 1 14V4C1 3.44772 1.44772 3 2 3Z" ' +
-      'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>' +
-      '</svg>';
-    toggle.addEventListener('click', this.boundToggleClick as EventListener);
-    this.wrapperEl.appendChild(toggle);
+    if (this.config.calendar) {
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'dp-toggle';
+      toggle.setAttribute('aria-label', 'Open calendar');
+      toggle.setAttribute('tabindex', '-1');
+      toggle.innerHTML =
+        '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">' +
+        '<path d="M5 1V3M11 1V3M1 6H15M2 3H14C14.5523 3 15 3.44772 15 4V14C15 14.5523 14.5523 15 14 15H2C1.44772 15 1 14.5523 1 14V4C1 3.44772 1.44772 3 2 3Z" ' +
+        'stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '</svg>';
+      toggle.addEventListener('click', this.boundToggleClick as EventListener);
+      this.wrapperEl.appendChild(toggle);
+    }
   }
 
   private setupInput(): void {
@@ -251,13 +331,25 @@ export class DatePicker {
       this.inputEl.setAttribute('placeholder', this.config.placeholder);
     }
 
-    this.inputEl.setAttribute('role', 'combobox');
-    this.inputEl.setAttribute('aria-haspopup', 'dialog');
-    this.inputEl.setAttribute('aria-expanded', 'false');
+    if (this.config.calendar) {
+      this.inputEl.setAttribute('role', 'combobox');
+      this.inputEl.setAttribute('aria-haspopup', 'dialog');
+      this.inputEl.setAttribute('aria-expanded', 'false');
+    } else {
+      this.inputEl.removeAttribute('role');
+      this.inputEl.removeAttribute('aria-haspopup');
+      this.inputEl.removeAttribute('aria-expanded');
+    }
     this.inputEl.setAttribute('autocomplete', 'off');
 
-    this.segmentedInput = new SegmentedInput(this.inputEl, this.config.format);
-    this.inputEl.addEventListener('blur', this.boundInputChange);
+    if (this.usesSegmentedInput()) {
+      this.segmentedInput = new SegmentedInput(this.inputEl, this.config.format);
+      this.inputEl.addEventListener('blur', this.boundInputChange);
+    } else {
+      this.segmentedInput = null;
+      this.inputEl.addEventListener('input', this.boundInputChange);
+      this.inputEl.addEventListener('blur', this.boundInputChange);
+    }
   }
 
   private setupErrorDisplay(): void {
@@ -279,7 +371,7 @@ export class DatePicker {
   // ===========================================================================
 
   private openCalendar(): void {
-    if (this.config.disabled || this.config.readOnly) return;
+    if (!this.config.calendar || this.config.disabled || this.config.readOnly) return;
 
     this.isOpen = true;
     this.currentView = 'days';
@@ -305,10 +397,13 @@ export class DatePicker {
     );
 
     this.setupCalendarEvents();
+    this.setupTouchSupport();
 
     if (this.config.keyboard) {
       this.setupKeyboardNav();
     }
+
+    this.trackAnalytics('open');
 
     this.inputEl.dispatchEvent(
       new CustomEvent('datepicker:open', { bubbles: true }),
@@ -332,6 +427,8 @@ export class DatePicker {
       this.events = null;
     }
 
+    this.teardownTouchSupport();
+
     this.a11y.disableFocusTrap();
 
     if (this.calendarEl) {
@@ -345,6 +442,7 @@ export class DatePicker {
     this.inputEl.dispatchEvent(
       new CustomEvent('datepicker:close', { bubbles: true }),
     );
+    this.trackAnalytics('close');
   }
 
   // ===========================================================================
@@ -364,7 +462,7 @@ export class DatePicker {
         const d = parseISO(dateStr);
         if (d) {
           this.selectDate(d);
-          if (this.config.closeOnSelect) {
+          if (this.shouldCloseOnSelection()) {
             this.closeCalendar();
           }
         }
@@ -431,7 +529,7 @@ export class DatePicker {
         const d = parseISO(dateStr);
         if (d) {
           this.selectDate(d);
-          if (this.config.closeOnSelect) {
+          if (this.shouldCloseOnSelection()) {
             this.closeCalendar();
           }
         }
@@ -516,6 +614,8 @@ export class DatePicker {
         `Select year: ${this.yearRangeStart} to ${this.yearRangeStart + 11}`,
       );
     }
+
+    this.trackAnalytics('view_change', { view });
   }
 
   // ===========================================================================
@@ -592,14 +692,30 @@ export class DatePicker {
   // ===========================================================================
 
   private selectDate(date: Date): void {
-    this.selectedDate = date;
-    this.currentMonth = { year: date.getFullYear(), month: date.getMonth() };
-    this.yearRangeStart = getYearRangeStart(date.getFullYear());
+    if (this.config.selectionMode === 'range') {
+      this.selectRangeDate(date);
+      return;
+    }
 
-    this.segmentedInput?.setValue(date);
+    this.selectSingleDate(date);
+  }
+
+  private selectSingleDate(date: Date): void {
+    const normalized = toDateOnly(date);
+    this.selectedDate = normalized;
+    this.rangeStartDate = null;
+    this.rangeEndDate = null;
+    this.currentMonth = {
+      year: normalized.getFullYear(),
+      month: normalized.getMonth(),
+    };
+    this.yearRangeStart = getYearRangeStart(normalized.getFullYear());
+
+    this.segmentedInput?.setValue(normalized);
+    this.syncVisibleInput();
     this.updateHiddenInput();
 
-    const formatted = formatDate(date, this.config.format, this.config.locale);
+    const formatted = this.formatDisplayDate(normalized);
     this.a11y.announceSelection(formatted);
 
     if (this.isOpen && this.calendarEl) {
@@ -607,13 +723,91 @@ export class DatePicker {
     }
 
     this.runValidation();
+    this.emitChangeEvent(normalized);
+    this.trackAnalytics('select', {
+      value: this.getValue(),
+      displayValue: formatted,
+    });
+  }
 
-    this.inputEl.dispatchEvent(
-      new CustomEvent('datepicker:change', {
-        bubbles: true,
-        detail: { date, value: this.getValue() },
-      }),
-    );
+  private selectRangeDate(date: Date): void {
+    const normalized = toDateOnly(date);
+
+    if (!this.rangeStartDate || this.rangeEndDate) {
+      this.rangeStartDate = normalized;
+      this.rangeEndDate = null;
+      this.selectedDate = null;
+      this.currentMonth = {
+        year: normalized.getFullYear(),
+        month: normalized.getMonth(),
+      };
+      this.yearRangeStart = getYearRangeStart(normalized.getFullYear());
+      this.syncVisibleInput();
+      this.updateHiddenInput();
+
+      if (this.isOpen && this.calendarEl) {
+        this.renderCurrentMonth();
+      }
+
+      const formattedStart = this.formatDisplayDate(normalized);
+      this.a11y.announce(`Start date selected ${formattedStart}`);
+      this.emitChangeEvent(null);
+      this.trackAnalytics('range_start', {
+        range: this.getRange(),
+        value: this.getValue(),
+      });
+      return;
+    }
+
+    if (compareDays(normalized, this.rangeStartDate) < 0) {
+      this.rangeStartDate = normalized;
+      this.rangeEndDate = null;
+      this.currentMonth = {
+        year: normalized.getFullYear(),
+        month: normalized.getMonth(),
+      };
+      this.yearRangeStart = getYearRangeStart(normalized.getFullYear());
+      this.syncVisibleInput();
+      this.updateHiddenInput();
+
+      if (this.isOpen && this.calendarEl) {
+        this.renderCurrentMonth();
+      }
+
+      this.a11y.announce(`Start date updated to ${this.formatDisplayDate(normalized)}`);
+      this.emitChangeEvent(null);
+      this.trackAnalytics('range_restart', {
+        range: this.getRange(),
+        value: this.getValue(),
+      });
+      return;
+    }
+
+    this.rangeEndDate = normalized;
+    this.currentMonth = {
+      year: normalized.getFullYear(),
+      month: normalized.getMonth(),
+    };
+    this.yearRangeStart = getYearRangeStart(normalized.getFullYear());
+    this.syncVisibleInput();
+    this.updateHiddenInput();
+
+    if (this.isOpen && this.calendarEl) {
+      this.renderCurrentMonth();
+    }
+
+    const startText = this.rangeStartDate
+      ? this.formatDisplayDate(this.rangeStartDate)
+      : '';
+    const endText = this.formatDisplayDate(normalized);
+    this.a11y.announce(`Selected range ${startText} to ${endText}`);
+
+    this.runValidation();
+    this.emitChangeEvent(null);
+    this.trackAnalytics('range_complete', {
+      range: this.getRange(),
+      value: this.getValue(),
+    });
   }
 
   private navigateMonth(offset: number): void {
@@ -632,6 +826,13 @@ export class DatePicker {
         this.keyboard?.focusFirst();
       });
     }
+
+    this.trackAnalytics('navigate', {
+      direction: offset > 0 ? 'next' : 'previous',
+      month: this.currentMonth.month + 1,
+      year: this.currentMonth.year,
+      view: this.currentView,
+    });
   }
 
   private renderCurrentMonth(): void {
@@ -656,6 +857,8 @@ export class DatePicker {
       {
         weekStart: this.config.weekStart,
         selected: this.selectedDate,
+        rangeStart: this.rangeStartDate,
+        rangeEnd: this.rangeEndDate,
         min,
         max,
         disabledDates,
@@ -668,10 +871,43 @@ export class DatePicker {
   // ===========================================================================
 
   private validate(): ValidationResult {
-    const displayValue = this.inputEl.value;
     const min = this.config.min ? parseISO(this.config.min) : null;
     const max = this.config.max ? parseISO(this.config.max) : null;
 
+    if (this.config.selectionMode === 'range') {
+      if (!this.rangeStartDate && !this.rangeEndDate) {
+        return this.config.required
+          ? { valid: false, message: 'Please select a date range' }
+          : { valid: true };
+      }
+
+      if (!this.rangeStartDate || !this.rangeEndDate) {
+        return { valid: true };
+      }
+
+      if (compareDays(this.rangeEndDate, this.rangeStartDate) < 0) {
+        return { valid: false, message: 'End date must be after start date' };
+      }
+
+      const startText = this.formatDisplayDate(this.rangeStartDate);
+      const endText = this.formatDisplayDate(this.rangeEndDate);
+      const startResult = validateDate(startText, this.rangeStartDate, {
+        required: true,
+        min,
+        max,
+        rules: this.config.validate,
+      });
+      if (!startResult.valid) return startResult;
+
+      return validateDate(endText, this.rangeEndDate, {
+        required: true,
+        min,
+        max,
+        rules: this.config.validate,
+      });
+    }
+
+    const displayValue = this.inputEl.value;
     return validateDate(displayValue, this.selectedDate, {
       required: this.config.required,
       min,
@@ -721,18 +957,22 @@ export class DatePicker {
   private onInputChange(): void {
     if (this.destroyed) return;
 
-    const date = this.segmentedInput?.getValue() ?? null;
+    if (this.segmentedInput) {
+      const date = this.segmentedInput.getValue() ?? null;
 
-    if (date) {
-      this.selectedDate = date;
-      this.currentMonth = {
-        year: date.getFullYear(),
-        month: date.getMonth(),
-      };
-      this.updateHiddenInput();
+      if (date) {
+        this.selectedDate = toDateOnly(date);
+        this.currentMonth = {
+          year: date.getFullYear(),
+          month: date.getMonth(),
+        };
+        this.updateHiddenInput();
+      } else {
+        this.selectedDate = null;
+        this.updateHiddenInput();
+      }
     } else {
-      this.selectedDate = null;
-      this.updateHiddenInput();
+      this.applyNativeInputValue();
     }
 
     this.runValidation();
@@ -759,7 +999,21 @@ export class DatePicker {
   private updateHiddenInput(): void {
     if (!this.hiddenInput) return;
 
-    if (this.selectedDate) {
+    if (this.config.selectionMode === 'range') {
+      if (this.rangeStartDate && this.rangeEndDate) {
+        this.hiddenInput.value = [
+          formatForValue(this.rangeStartDate, this.config.valueType),
+          formatForValue(this.rangeEndDate, this.config.valueType),
+        ].join(',');
+      } else if (this.rangeStartDate) {
+        this.hiddenInput.value = formatForValue(
+          this.rangeStartDate,
+          this.config.valueType,
+        );
+      } else {
+        this.hiddenInput.value = '';
+      }
+    } else if (this.selectedDate) {
       this.hiddenInput.value = formatForValue(
         this.selectedDate,
         this.config.valueType,
@@ -769,5 +1023,240 @@ export class DatePicker {
     }
 
     this.hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  private usesSegmentedInput(): boolean {
+    return this.config.selectionMode === 'single' && this.config.inputMode === 'segmented';
+  }
+
+  private shouldCloseOnSelection(): boolean {
+    if (!this.config.closeOnSelect) return false;
+    if (this.config.selectionMode === 'range') {
+      return Boolean(this.rangeStartDate && this.rangeEndDate);
+    }
+    return true;
+  }
+
+  private resolveDateLike(value: Date | string | null): Date | null {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    return this.parseManualDate(value);
+  }
+
+  private parseManualDate(value: string): Date | null {
+    return parseISO(value) ?? parseDate(value, this.config.format);
+  }
+
+  private parseRangeInput(value: string): DateRangeValue | null {
+    if (!value.trim()) {
+      return { start: null, end: null };
+    }
+
+    const parts = value
+      .split(this.config.rangeSeparator)
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    if (parts.length === 0) {
+      return { start: null, end: null };
+    }
+
+    if (parts.length === 1) {
+      const start = this.parseManualDate(parts[0]);
+      return start ? { start, end: null } : null;
+    }
+
+    const start = this.parseManualDate(parts[0]);
+    const end = this.parseManualDate(parts[1]);
+    if (!start || !end) return null;
+    return { start, end };
+  }
+
+  private formatDisplayDate(date: Date): string {
+    return formatDate(date, this.config.format, this.config.locale);
+  }
+
+  private syncVisibleInput(): void {
+    if (this.segmentedInput && this.config.selectionMode === 'single') {
+      this.segmentedInput.setValue(this.selectedDate);
+      return;
+    }
+
+    if (this.config.selectionMode === 'range') {
+      if (!this.rangeStartDate) {
+        this.inputEl.value = '';
+        return;
+      }
+
+      const start = this.formatDisplayDate(this.rangeStartDate);
+      if (!this.rangeEndDate) {
+        this.inputEl.value = start;
+        return;
+      }
+
+      const end = this.formatDisplayDate(this.rangeEndDate);
+      this.inputEl.value = `${start}${this.config.rangeSeparator}${end}`;
+      return;
+    }
+
+    this.inputEl.value = this.selectedDate ? this.formatDisplayDate(this.selectedDate) : '';
+  }
+
+  private applyNativeInputValue(): void {
+    const raw = this.inputEl.value.trim();
+
+    if (!raw) {
+      this.selectedDate = null;
+      this.rangeStartDate = null;
+      this.rangeEndDate = null;
+      this.updateHiddenInput();
+      return;
+    }
+
+    if (this.config.selectionMode === 'range') {
+      const parsedRange = this.parseRangeInput(raw);
+      if (parsedRange) {
+        this.rangeStartDate = parsedRange.start ? toDateOnly(parsedRange.start) : null;
+        this.rangeEndDate = parsedRange.end ? toDateOnly(parsedRange.end) : null;
+        const visibleDate = this.rangeEndDate ?? this.rangeStartDate;
+        if (visibleDate) {
+          this.currentMonth = {
+            year: visibleDate.getFullYear(),
+            month: visibleDate.getMonth(),
+          };
+          this.yearRangeStart = getYearRangeStart(visibleDate.getFullYear());
+        }
+      } else {
+        this.rangeStartDate = null;
+        this.rangeEndDate = null;
+      }
+      this.updateHiddenInput();
+      this.trackAnalytics('manual_input', {
+        mode: 'range',
+        value: this.getValue(),
+      });
+      return;
+    }
+
+    const parsed = this.parseManualDate(raw);
+    if (parsed) {
+      const normalized = toDateOnly(parsed);
+      this.selectedDate = normalized;
+      this.currentMonth = {
+        year: normalized.getFullYear(),
+        month: normalized.getMonth(),
+      };
+      this.yearRangeStart = getYearRangeStart(normalized.getFullYear());
+    } else {
+      this.selectedDate = null;
+    }
+
+    this.updateHiddenInput();
+    this.trackAnalytics('manual_input', {
+      mode: 'single',
+      value: this.getValue(),
+    });
+  }
+
+  private emitChangeEvent(date: Date | null): void {
+    this.inputEl.dispatchEvent(
+      new CustomEvent('datepicker:change', {
+        bubbles: true,
+        detail: {
+          date,
+          range: this.getRange(),
+          mode: this.config.selectionMode,
+          value: this.getValue(),
+        },
+      }),
+    );
+  }
+
+  private trackAnalytics(
+    action: string,
+    detail: Record<string, unknown> = {},
+  ): void {
+    if (this.config.analytics === 'off') return;
+
+    const payload = {
+      action,
+      mode: this.config.selectionMode,
+      inputMode: this.config.inputMode,
+      calendar: this.config.calendar,
+      pickerName: this.config.name || this.inputEl.id || null,
+      value: this.getValue(),
+      range: this.getRange(),
+      month: this.currentMonth.month + 1,
+      year: this.currentMonth.year,
+      ...detail,
+    };
+
+    this.inputEl.dispatchEvent(
+      new CustomEvent('datepicker:analytics', {
+        bubbles: true,
+        detail: payload,
+      }),
+    );
+
+    if (this.config.analytics === 'datalayer') {
+      const win = window as Window & {
+        dataLayer?: Array<Record<string, unknown>>;
+      };
+      if (Array.isArray(win.dataLayer)) {
+        win.dataLayer.push({
+          event: 'datepicker',
+          ...payload,
+        });
+      }
+    }
+  }
+
+  private setupTouchSupport(): void {
+    if (!this.calendarEl) return;
+    this.calendarEl.addEventListener('touchstart', this.boundTouchStart, {
+      passive: true,
+    });
+    this.calendarEl.addEventListener('touchend', this.boundTouchEnd, {
+      passive: true,
+    });
+  }
+
+  private teardownTouchSupport(): void {
+    if (!this.calendarEl) return;
+    this.calendarEl.removeEventListener('touchstart', this.boundTouchStart);
+    this.calendarEl.removeEventListener('touchend', this.boundTouchEnd);
+  }
+
+  private onTouchStart(e: TouchEvent): void {
+    const touch = e.changedTouches[0];
+    if (!touch) return;
+    this.touchStartX = touch.clientX;
+    this.touchStartY = touch.clientY;
+  }
+
+  private onTouchEnd(e: TouchEvent): void {
+    if (this.currentView !== 'days') return;
+
+    const touch = e.changedTouches[0];
+    if (!touch || this.touchStartX === null || this.touchStartY === null) {
+      return;
+    }
+
+    const deltaX = touch.clientX - this.touchStartX;
+    const deltaY = touch.clientY - this.touchStartY;
+    this.touchStartX = null;
+    this.touchStartY = null;
+
+    if (Math.abs(deltaX) < 40 || Math.abs(deltaX) < Math.abs(deltaY)) {
+      return;
+    }
+
+    if (deltaX < 0) {
+      this.navigateMonth(1);
+      this.trackAnalytics('swipe', { direction: 'left' });
+    } else {
+      this.navigateMonth(-1);
+      this.trackAnalytics('swipe', { direction: 'right' });
+    }
   }
 }

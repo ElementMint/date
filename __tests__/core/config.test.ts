@@ -12,6 +12,9 @@ describe('DEFAULT_CONFIG', () => {
     expect(DEFAULT_CONFIG.min).toBeNull();
     expect(DEFAULT_CONFIG.max).toBeNull();
     expect(DEFAULT_CONFIG.valueType).toBe('iso');
+    expect(DEFAULT_CONFIG.selectionMode).toBe('single');
+    expect(DEFAULT_CONFIG.inputMode).toBe('segmented');
+    expect(DEFAULT_CONFIG.calendar).toBe(true);
     expect(DEFAULT_CONFIG.locale).toBe('en');
     expect(DEFAULT_CONFIG.weekStart).toBe(1);
     expect(DEFAULT_CONFIG.theme).toBe('system');
@@ -29,6 +32,8 @@ describe('DEFAULT_CONFIG', () => {
     expect(DEFAULT_CONFIG.keyboard).toBe(true);
     expect(DEFAULT_CONFIG.className).toBe('');
     expect(DEFAULT_CONFIG.position).toBe('auto');
+    expect(DEFAULT_CONFIG.rangeSeparator).toBe(' to ');
+    expect(DEFAULT_CONFIG.analytics).toBe('events');
   });
 });
 
@@ -39,9 +44,27 @@ describe('parseConfig', () => {
     expect(config.min).toBeNull();
     expect(config.max).toBeNull();
     expect(config.valueType).toBe('iso');
+    expect(config.selectionMode).toBe('single');
+    expect(config.inputMode).toBe('segmented');
+    expect(config.calendar).toBe(true);
     expect(config.locale).toBe('en');
     expect(config.weekStart).toBe(1);
     expect(config.required).toBe(false);
+  });
+
+  it('reads range mode and related options', () => {
+    const config = parseConfig(mockElement({
+      selectionMode: 'range',
+      inputMode: 'native',
+      calendar: 'false',
+      rangeSeparator: ' -> ',
+      analytics: 'datalayer',
+    }));
+    expect(config.selectionMode).toBe('range');
+    expect(config.inputMode).toBe('native');
+    expect(config.calendar).toBe(false);
+    expect(config.rangeSeparator).toBe(' -> ');
+    expect(config.analytics).toBe('datalayer');
   });
 
   it('reads data-format', () => {

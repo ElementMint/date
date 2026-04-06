@@ -79,6 +79,9 @@ function renderDayCell(day: CalendarDay): HTMLElement {
   const classes: string[] = ['dp-day'];
   if (day.isToday) classes.push('dp-day--today');
   if (day.isSelected) classes.push('dp-day--selected');
+  if (day.isRangeStart) classes.push('dp-day--range-start');
+  if (day.isRangeEnd) classes.push('dp-day--range-end');
+  if (day.isInRange) classes.push('dp-day--in-range');
   if (day.isDisabled) classes.push('dp-day--disabled');
   if (day.isOtherMonth) classes.push('dp-day--other-month');
 

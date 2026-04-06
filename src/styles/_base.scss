@@ -17,6 +17,7 @@
   font-size: var(--dp-font-size);
   color: var(--dp-text);
   user-select: none;
+  touch-action: pan-y;
 
   *,
   *::before,
@@ -206,6 +207,24 @@
     background: var(--dp-primary-hover);
     border-color: var(--dp-primary-hover);
   }
+}
+
+.dp-day--in-range {
+  background: var(--dp-primary-soft);
+  border-color: transparent;
+  border-radius: 999px;
+}
+
+.dp-day--range-start,
+.dp-day--range-end {
+  background: var(--dp-primary);
+  color: #ffffff;
+  font-weight: 600;
+  border-color: var(--dp-primary);
+}
+
+.dp-day--range-start.dp-day--range-end {
+  border-radius: 50%;
 }
 
 .dp-day--disabled {

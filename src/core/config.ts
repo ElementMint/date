@@ -8,7 +8,15 @@
 // passing a mock object with a `dataset` property.
 // ============================================================================
 
-import type { DatePickerConfig, ValueType, Theme, WeekDay } from './types';
+import type {
+  DatePickerConfig,
+  ValueType,
+  Theme,
+  WeekDay,
+  SelectionMode,
+  InputMode,
+  AnalyticsMode,
+} from './types';
 
 /**
  * Default configuration values.
@@ -19,6 +27,9 @@ export const DEFAULT_CONFIG: DatePickerConfig = {
   min: null,
   max: null,
   valueType: 'iso',
+  selectionMode: 'single',
+  inputMode: 'segmented',
+  calendar: true,
   locale: 'en',
   weekStart: 1,
   theme: 'system',
@@ -36,6 +47,8 @@ export const DEFAULT_CONFIG: DatePickerConfig = {
   keyboard: true,
   className: '',
   position: 'auto',
+  rangeSeparator: ' to ',
+  analytics: 'events',
 };
 
 /** Minimal interface for the element parameter (avoids hard DOM dependency) */
@@ -51,6 +64,9 @@ interface DatasetSource {
  *   data-min           -> min
  *   data-max           -> max
  *   data-value-type    -> valueType
+ *   data-selection-mode-> selectionMode
+ *   data-input-mode    -> inputMode
+ *   data-calendar      -> calendar
  *   data-locale        -> locale
  *   data-week-start    -> weekStart
  *   data-theme         -> theme
@@ -68,6 +84,8 @@ interface DatasetSource {
  *   data-keyboard      -> keyboard
  *   data-class-name    -> className
  *   data-position      -> position
+ *   data-range-separator -> rangeSeparator
+ *   data-analytics     -> analytics
  *
  * @param element - An object with a `dataset` property (HTMLElement or mock)
  * @returns Parsed DatePickerConfig (unrecognized attributes are ignored)
@@ -84,6 +102,17 @@ export function parseConfig(element: DatasetSource): DatePickerConfig {
       ['iso', 'epoch', 'unix'],
       DEFAULT_CONFIG.valueType,
     ),
+    selectionMode: parseEnum<SelectionMode>(
+      d.selectionMode,
+      ['single', 'range'],
+      DEFAULT_CONFIG.selectionMode,
+    ),
+    inputMode: parseEnum<InputMode>(
+      d.inputMode,
+      ['segmented', 'native'],
+      DEFAULT_CONFIG.inputMode,
+    ),
+    calendar: parseBool(d.calendar, DEFAULT_CONFIG.calendar),
     locale: parseString(d.locale, DEFAULT_CONFIG.locale),
     weekStart: parseWeekDay(d.weekStart, DEFAULT_CONFIG.weekStart),
     theme: parseEnum<Theme>(
@@ -108,6 +137,15 @@ export function parseConfig(element: DatasetSource): DatePickerConfig {
       d.position,
       ['bottom', 'top', 'auto'],
       DEFAULT_CONFIG.position,
+    ),
+    rangeSeparator: parseString(
+      d.rangeSeparator,
+      DEFAULT_CONFIG.rangeSeparator,
+    ),
+    analytics: parseEnum<AnalyticsMode>(
+      d.analytics,
+      ['off', 'events', 'datalayer'],
+      DEFAULT_CONFIG.analytics,
     ),
   };
 }

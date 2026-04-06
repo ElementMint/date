@@ -78,6 +78,15 @@ describe('DatePicker integration', () => {
       p.destroy();
       document.body.removeChild(wrapper);
     });
+
+    it('does not create a toggle when calendar is disabled', () => {
+      input.setAttribute('data-calendar', 'false');
+      input.setAttribute('data-input-mode', 'native');
+      picker = new DatePicker(input);
+      const wrapper = input.closest('.dp-input');
+      expect(wrapper?.querySelector('.dp-toggle')).toBeNull();
+      expect(input.getAttribute('role')).toBeNull();
+    });
   });
 
   describe('open/close', () => {
@@ -172,6 +181,27 @@ describe('DatePicker integration', () => {
         expect(handler.mock.calls[0][0].detail).toHaveProperty('value');
       }
     });
+
+    it('supports hotel-style range selection', () => {
+      input.setAttribute('data-selection-mode', 'range');
+      picker.destroy();
+      picker = new DatePicker(input);
+      picker.open();
+
+      const days = Array.from(
+        document.querySelectorAll('.dp-day:not([disabled]):not(.dp-day--other-month)'),
+      ) as HTMLElement[];
+
+      expect(days.length).toBeGreaterThan(3);
+      days[1].click();
+      days[3].click();
+
+      expect(picker.getValue()).toContain(',');
+      expect(input.value).toContain(' to ');
+      const range = picker.getRange();
+      expect(range.start).toBeInstanceOf(Date);
+      expect(range.end).toBeInstanceOf(Date);
+    });
   });
 
   describe('getValue/setValue API', () => {
@@ -215,6 +245,31 @@ describe('DatePicker integration', () => {
       const d2 = picker.getDate();
       expect(d1).not.toBe(d2);
       expect(d1!.getTime()).toBe(d2!.getTime());
+    });
+
+    it('supports native manual typing mode', () => {
+      picker.destroy();
+      input.setAttribute('data-calendar', 'false');
+      input.setAttribute('data-input-mode', 'native');
+      input.setAttribute('data-format', 'DD/MM/YYYY');
+      picker = new DatePicker(input);
+
+      input.value = '24/12/2026';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('blur', { bubbles: true }));
+
+      expect(picker.getValue()).toBe('2026-12-24');
+    });
+
+    it('emits analytics events when enabled', () => {
+      picker.destroy();
+      input.setAttribute('data-analytics', 'events');
+      picker = new DatePicker(input);
+      const handler = jest.fn();
+      input.addEventListener('datepicker:analytics', handler);
+
+      picker.open();
+      expect(handler).toHaveBeenCalled();
     });
   });
 

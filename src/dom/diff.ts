@@ -18,6 +18,9 @@ function toISODateString(date: Date): string {
 /** CSS class constants matching renderer.ts */
 const CLS_TODAY = 'dp-day--today';
 const CLS_SELECTED = 'dp-day--selected';
+const CLS_RANGE_START = 'dp-day--range-start';
+const CLS_RANGE_END = 'dp-day--range-end';
+const CLS_IN_RANGE = 'dp-day--in-range';
 const CLS_DISABLED = 'dp-day--disabled';
 const CLS_OTHER_MONTH = 'dp-day--other-month';
 
@@ -109,6 +112,9 @@ function updateDayCell(cell: HTMLElement, day: CalendarDay): void {
 
   toggleClass(cell, CLS_TODAY, day.isToday);
   toggleClass(cell, CLS_SELECTED, day.isSelected);
+  toggleClass(cell, CLS_RANGE_START, day.isRangeStart);
+  toggleClass(cell, CLS_RANGE_END, day.isRangeEnd);
+  toggleClass(cell, CLS_IN_RANGE, day.isInRange);
   toggleClass(cell, CLS_DISABLED, day.isDisabled);
   toggleClass(cell, CLS_OTHER_MONTH, day.isOtherMonth);
 
