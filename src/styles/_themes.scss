@@ -1,0 +1,75 @@
+// ============================================================================
+// _themes.scss - Light, dark, and system theme variants
+// ============================================================================
+
+// --- Explicit light theme ---
+
+[data-theme='light'] {
+  --dp-primary: #3b82f6;
+  --dp-primary-hover: #2563eb;
+
+  --dp-bg: #ffffff;
+  --dp-surface: #ffffff;
+  --dp-border: #e2e8f0;
+
+  --dp-text: #1e293b;
+  --dp-text-muted: #94a3b8;
+  --dp-text-disabled: #cbd5e1;
+
+  --dp-error: #ef4444;
+  --dp-success: #22c55e;
+
+  --dp-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+// --- Explicit dark theme ---
+
+[data-theme='dark'] {
+  --dp-primary: #60a5fa;
+  --dp-primary-hover: #3b82f6;
+
+  --dp-bg: #1e293b;
+  --dp-surface: #1e293b;
+  --dp-border: #334155;
+
+  --dp-text: #f1f5f9;
+  --dp-text-muted: #64748b;
+  --dp-text-disabled: #475569;
+
+  --dp-error: #f87171;
+  --dp-success: #4ade80;
+
+  --dp-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+// --- System preference: dark mode ---
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --dp-primary: #60a5fa;
+    --dp-primary-hover: #3b82f6;
+
+    --dp-bg: #1e293b;
+    --dp-surface: #1e293b;
+    --dp-border: #334155;
+
+    --dp-text: #f1f5f9;
+    --dp-text-muted: #64748b;
+    --dp-text-disabled: #475569;
+
+    --dp-error: #f87171;
+    --dp-success: #4ade80;
+
+    --dp-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  }
+}
+
+// --- Smooth theme transitions ---
+
+.dp-calendar,
+.dp-input {
+  transition: background-color var(--dp-transition-speed) ease,
+    border-color var(--dp-transition-speed) ease,
+    color var(--dp-transition-speed) ease,
+    box-shadow var(--dp-transition-speed) ease;
+}

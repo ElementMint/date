@@ -1,0 +1,150 @@
+{
+  "name": "@elementmint/date",
+  "version": "0.0.0-development",
+  "description": "A lightweight, dependency-free, attribute-driven date picker library",
+  "type": "module",
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.js",
+  "browser": "dist/iife/date.min.js",
+  "types": "dist/types/index.d.ts",
+  "style": "dist/date.min.css",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.cjs"
+    },
+    "./css": "./dist/date.min.css",
+    "./adapters/react": {
+      "types": "./dist/types/adapters/react.d.ts",
+      "import": "./dist/esm/adapters/react.js"
+    },
+    "./adapters/vue": {
+      "types": "./dist/types/adapters/vue.d.ts",
+      "import": "./dist/esm/adapters/vue.js"
+    },
+    "./adapters/angular": {
+      "types": "./dist/types/adapters/angular.d.ts",
+      "import": "./dist/esm/adapters/angular.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": [
+    "dist/iife/*",
+    "dist/date.min.css"
+  ],
+  "scripts": {
+    "dev": "rollup -c -w",
+    "build": "npm run build:js && npm run build:types && npm run build:css",
+    "build:js": "rollup -c",
+    "build:types": "tsc --project tsconfig.json --emitDeclarationOnly",
+    "build:css": "sass src/styles/main.scss dist/date.min.css --style compressed --no-source-map",
+    "lint": "eslint 'src/**/*.ts'",
+    "lint:fix": "eslint 'src/**/*.ts' --fix",
+    "format": "prettier --write 'src/**/*.ts' 'src/**/*.scss'",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "size": "size-limit",
+    "prepublishOnly": "npm run build",
+    "prepare": "husky",
+    "release": "semantic-release",
+    "demo": "npx serve ."
+  },
+  "keywords": [
+    "date",
+    "datepicker",
+    "date-picker",
+    "calendar",
+    "date",
+    "picker",
+    "a11y",
+    "accessible",
+    "i18n",
+    "lightweight",
+    "no-dependencies",
+    "web-component",
+    "attribute-driven",
+    "elementmint"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ElementMint/date.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ElementMint/date/issues"
+  },
+  "homepage": "https://github.com/ElementMint/date#readme",
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "@rollup/plugin-typescript": "^11.1.0",
+    "@size-limit/preset-small-lib": "^11.0.0",
+    "@types/jest": "^29.5.0",
+    "eslint": "^9.0.0",
+    "husky": "^9.0.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "prettier": "^3.2.0",
+    "rollup": "^4.9.0",
+    "@rollup/plugin-terser": "^0.4.0",
+    "sass": "^1.70.0",
+    "semantic-release": "^23.0.0",
+    "size-limit": "^11.0.0",
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.2",
+    "tslib": "^2.6.0",
+    "typescript": "^5.3.0",
+    "typescript-eslint": "^8.0.0"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "vue": ">=3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  },
+  "size-limit": [
+    {
+      "path": "dist/iife/date.min.js",
+      "limit": "15 kB",
+      "gzip": true
+    },
+    {
+      "path": "dist/date.min.css",
+      "limit": "3 kB",
+      "gzip": true
+    }
+  ],
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "release": {
+    "branches": [
+      "main"
+    ],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/npm",
+      "@semantic-release/github"
+    ]
+  }
+}

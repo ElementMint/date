@@ -1,0 +1,46 @@
+// ============================================================================
+// _rtl.scss - Right-to-left layout overrides
+// ============================================================================
+
+[dir='rtl'] .dp-calendar,
+.dp-calendar[dir='rtl'] {
+  direction: rtl;
+
+  // --- Header: flip navigation arrow order ---
+  .dp-header {
+    flex-direction: row-reverse;
+  }
+
+  .dp-title {
+    text-align: center;
+  }
+
+  // Mirror the nav arrow SVGs horizontally
+  .dp-nav-prev svg,
+  .dp-nav-next svg {
+    transform: scaleX(-1);
+  }
+
+  // --- Grid: natural RTL flow ---
+  .dp-weekdays,
+  .dp-row {
+    direction: rtl;
+  }
+}
+
+// --- Input RTL ---
+
+[dir='rtl'] .dp-input,
+.dp-input[dir='rtl'] {
+  direction: rtl;
+
+  .dp-icon {
+    margin-left: 0;
+    margin-right: 6px;
+  }
+
+  .dp-loader {
+    margin-left: 0;
+    margin-right: 6px;
+  }
+}

@@ -1,0 +1,142 @@
+// ============================================================================
+// _input.scss - Segmented date input, icon, loader, and error styles
+// ============================================================================
+
+// --- Input wrapper ---
+
+.dp-input {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--dp-border);
+  border-radius: var(--dp-radius);
+  background: var(--dp-bg);
+  font-family: var(--dp-font-family);
+  font-size: var(--dp-font-size);
+  color: var(--dp-text);
+  cursor: text;
+  transition: border-color var(--dp-transition-speed) ease,
+    box-shadow var(--dp-transition-speed) ease;
+
+  &:focus-within {
+    border-color: var(--dp-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+
+  // Error state (applied by ErrorDisplay)
+  &.dp-error {
+    border-color: var(--dp-error);
+
+    &:focus-within {
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+    }
+  }
+}
+
+// --- Segments ---
+
+.dp-segment {
+  display: inline-block;
+  padding: 2px 1px;
+  border-radius: 3px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--dp-text);
+  caret-color: transparent;
+  outline: none;
+  transition: background-color var(--dp-transition-speed) ease,
+    color var(--dp-transition-speed) ease;
+
+  // Placeholder state (no value yet)
+  &[data-placeholder]::before {
+    content: attr(data-placeholder);
+    color: var(--dp-text-muted);
+  }
+}
+
+.dp-segment--active {
+  background: var(--dp-primary);
+  color: #ffffff;
+  border-radius: 3px;
+}
+
+// --- Separator ---
+
+.dp-separator {
+  display: inline-block;
+  padding: 0 1px;
+  color: var(--dp-text-muted);
+  pointer-events: none;
+  user-select: none;
+}
+
+// --- Calendar toggle icon ---
+
+.dp-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  margin-left: 6px;
+  padding: 0;
+  border: none;
+  border-radius: calc(var(--dp-radius) - 2px);
+  background: transparent;
+  color: var(--dp-text-muted);
+  cursor: pointer;
+  transition: background-color var(--dp-transition-speed) ease,
+    color var(--dp-transition-speed) ease;
+
+  &:hover {
+    background: var(--dp-border);
+    color: var(--dp-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--dp-primary);
+    outline-offset: -2px;
+  }
+
+  svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+// --- Async validation loader ---
+
+.dp-loader {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-left: 6px;
+  border: 2px solid var(--dp-border);
+  border-top-color: var(--dp-primary);
+  border-radius: 50%;
+  animation: dp-spin 0.6s linear infinite;
+}
+
+@keyframes dp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// --- Error message ---
+
+.dp-error-message {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--dp-font-family);
+  font-size: calc(var(--dp-font-size) - 2px);
+  color: var(--dp-error);
+  line-height: 1.4;
+  min-height: 0;
+}
