@@ -9,6 +9,7 @@ import {
   isSameDay,
   isDateInRange,
   toDateOnly,
+  compareDays,
 } from './date-utils';
 
 /** Options for calendar month generation */
@@ -17,6 +18,12 @@ export interface GenerateMonthOptions {
   weekStart: WeekDay;
   /** Currently selected date(s) */
   selected?: Date | Date[] | null;
+  /** Range start date */
+  rangeStart?: Date | null;
+  /** Range end date */
+  rangeEnd?: Date | null;
+  /** Hover-preview date for in-progress range picking */
+  previewEnd?: Date | null;
   /** Minimum selectable date */
   min?: Date | null;
   /** Maximum selectable date */
@@ -70,6 +77,9 @@ export function generateMonth(
   const {
     weekStart = 0,
     selected = null,
+    rangeStart = null,
+    rangeEnd = null,
+    previewEnd = null,
     min = null,
     max = null,
     disabledDates = [],
@@ -96,13 +106,41 @@ export function generateMonth(
   for (let i = leadingDays - 1; i >= 0; i--) {
     const day = prevMonthTotalDays - i;
     const date = new Date(prevYear, prevMonth, day);
-    allDays.push(createCalendarDay(date, day, true, today, selected, min, max, disabledDates));
+    allDays.push(
+      createCalendarDay(
+        date,
+        day,
+        true,
+        today,
+        selected,
+        rangeStart,
+        rangeEnd,
+        previewEnd,
+        min,
+        max,
+        disabledDates,
+      ),
+    );
   }
 
   // Current month days
   for (let day = 1; day <= totalDays; day++) {
     const date = new Date(year, month, day);
-    allDays.push(createCalendarDay(date, day, false, today, selected, min, max, disabledDates));
+    allDays.push(
+      createCalendarDay(
+        date,
+        day,
+        false,
+        today,
+        selected,
+        rangeStart,
+        rangeEnd,
+        previewEnd,
+        min,
+        max,
+        disabledDates,
+      ),
+    );
   }
 
   // Next month leading days
@@ -111,7 +149,21 @@ export function generateMonth(
   const remaining = GRID_ROWS * GRID_COLS - allDays.length;
   for (let day = 1; day <= remaining; day++) {
     const date = new Date(nextYear, nextMonth, day);
-    allDays.push(createCalendarDay(date, day, true, today, selected, min, max, disabledDates));
+    allDays.push(
+      createCalendarDay(
+        date,
+        day,
+        true,
+        today,
+        selected,
+        rangeStart,
+        rangeEnd,
+        previewEnd,
+        min,
+        max,
+        disabledDates,
+      ),
+    );
   }
 
   // Build 6x7 grid
@@ -136,21 +188,54 @@ function createCalendarDay(
   isOtherMonth: boolean,
   today: Date,
   selectedDate: Date | Date[] | null,
+  rangeStart: Date | null,
+  rangeEnd: Date | null,
+  previewEnd: Date | null,
   min: Date | null,
   max: Date | null,
   disabledDates: Date[],
 ): CalendarDay {
   const outOfRange = !isDateInRange(date, min, max);
   const explicitlyDisabled = disabledDates.length > 0 && isInDateList(date, disabledDates);
+  const activeRangeEnd = rangeEnd ?? previewEnd;
+  const isRangeStart = rangeStart ? isSameDay(date, rangeStart) : false;
+  const isRangeEnd =
+    activeRangeEnd && (!rangeStart || !isSameDay(rangeStart, activeRangeEnd))
+      ? isSameDay(date, activeRangeEnd)
+      : false;
+  const isInRange =
+    rangeStart && activeRangeEnd
+      ? isDayWithinRange(date, rangeStart, activeRangeEnd)
+      : false;
+  const selected = isSelected(date, selectedDate) || isRangeStart || isRangeEnd;
 
   return {
     date,
     day,
     isToday: isSameDay(date, today),
-    isSelected: isSelected(date, selectedDate),
+    isSelected: selected,
+    isRangeStart,
+    isRangeEnd,
+    isInRange,
     isDisabled: outOfRange || explicitlyDisabled,
     isOtherMonth,
   };
+}
+
+function isDayWithinRange(
+  date: Date,
+  start: Date,
+  end: Date,
+): boolean {
+  const dayOnly = toDateOnly(date);
+  const startOnly = toDateOnly(start);
+  const endOnly = toDateOnly(end);
+
+  if (compareDays(startOnly, endOnly) <= 0) {
+    return compareDays(dayOnly, startOnly) >= 0 && compareDays(dayOnly, endOnly) <= 0;
+  }
+
+  return compareDays(dayOnly, endOnly) >= 0 && compareDays(dayOnly, startOnly) <= 0;
 }
 
 /**
