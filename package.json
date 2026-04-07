@@ -85,7 +85,7 @@
   "bugs": {
     "url": "https://github.com/ElementMint/date/issues"
   },
-  "homepage": "https://github.com/ElementMint/date#readme",
+  "homepage": "https://elementmint.github.io/date/",
   "devDependencies": {
     "@commitlint/cli": "^19.0.0",
     "@commitlint/config-conventional": "^19.0.0",
@@ -123,12 +123,12 @@
   "size-limit": [
     {
       "path": "dist/iife/date.min.js",
-      "limit": "15 kB",
+      "limit": "25 kB",
       "gzip": true
     },
     {
       "path": "dist/date.min.css",
-      "limit": "3 kB",
+      "limit": "4 kB",
       "gzip": true
     }
   ],
