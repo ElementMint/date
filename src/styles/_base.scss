@@ -26,6 +26,43 @@
   }
 }
 
+// --- Inline calendar mode ---
+
+.dp-calendar--inline {
+  position: relative;
+  z-index: auto;
+  box-shadow: none;
+  border: 1px solid var(--dp-border);
+}
+
+// --- Dual month layout ---
+
+.dp-calendar--dual {
+  display: flex;
+  gap: 0;
+  min-width: calc(var(--dp-day-size) * 14 + 48px + 16px);
+
+  .dp-month-panel {
+    flex: 1;
+    min-width: 0;
+    padding: 0 8px;
+
+    &:first-child {
+      border-right: 1px solid var(--dp-border);
+      padding-right: 12px;
+    }
+
+    &:last-child {
+      padding-left: 12px;
+    }
+  }
+}
+
+.dp-month-panel {
+  display: flex;
+  flex-direction: column;
+}
+
 // --- Header ---
 
 .dp-header {
@@ -141,14 +178,50 @@
 
 .dp-body {
   position: relative;
+  overflow: hidden;
 }
 
-// --- Day grid ---
+// --- Slide animation ---
+
+.dp-grid-wrapper {
+  position: relative;
+  overflow: hidden;
+}
 
 .dp-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0;
+}
+
+.dp-grid--slide-left {
+  animation: dp-slide-left var(--dp-slide-speed) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.dp-grid--slide-right {
+  animation: dp-slide-right var(--dp-slide-speed) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes dp-slide-left {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes dp-slide-right {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .dp-row {
@@ -160,15 +233,18 @@
 // --- Day cells ---
 
 .dp-day {
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--dp-day-size);
+  flex-direction: column;
+  width: 100%;
   height: var(--dp-day-size);
-  margin: 1px auto;
+  margin: 0;
   padding: 0;
   border: 2px solid transparent;
-  border-radius: 50%;
+  border-radius: 0;
   background: transparent;
   color: var(--dp-text);
   font-family: inherit;
@@ -180,8 +256,25 @@
     color var(--dp-transition-speed) ease,
     border-color var(--dp-transition-speed) ease;
 
+  &::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    right: 0;
+    bottom: 3px;
+    left: 0;
+    border-radius: 0;
+    background: transparent;
+    opacity: 0;
+    transition: background-color var(--dp-transition-speed) ease,
+      opacity var(--dp-transition-speed) ease;
+    z-index: 0;
+  }
+
   &:hover:not([disabled]) {
-    background: var(--dp-border);
+    .dp-day-label {
+      background: var(--dp-border);
+    }
   }
 
   &:focus-visible {
@@ -190,42 +283,112 @@
   }
 }
 
+.dp-day-label {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--dp-day-size) - 4px);
+  height: calc(var(--dp-day-size) - 4px);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  transition: background-color var(--dp-transition-speed) ease,
+    color var(--dp-transition-speed) ease,
+    border-color var(--dp-transition-speed) ease,
+    transform var(--dp-transition-speed) ease;
+}
+
 // --- Day modifiers ---
 
-.dp-day--today {
+.dp-day--today .dp-day-label {
   border-color: var(--dp-primary);
   font-weight: 600;
 }
 
-.dp-day--selected {
+.dp-day--selected:not(.dp-day--range-start):not(.dp-day--range-end) .dp-day-label {
   background: var(--dp-primary);
   color: #ffffff;
   font-weight: 600;
   border-color: var(--dp-primary);
-
-  &:hover:not([disabled]) {
-    background: var(--dp-primary-hover);
-    border-color: var(--dp-primary-hover);
-  }
 }
 
+// --- Range selection: improved connected strip ---
+
 .dp-day--in-range {
-  background: var(--dp-primary-soft);
-  border-color: transparent;
-  border-radius: 999px;
+  &::before {
+    background: var(--dp-primary-soft);
+    opacity: 1;
+  }
+
+  .dp-day-label {
+    color: var(--dp-primary-hover);
+    font-weight: 600;
+  }
+
+  &:hover:not([disabled]) .dp-day-label {
+    background: rgba(59, 130, 246, 0.22);
+  }
 }
 
 .dp-day--range-start,
 .dp-day--range-end {
-  background: var(--dp-primary);
-  color: #ffffff;
-  font-weight: 600;
-  border-color: var(--dp-primary);
+  .dp-day-label {
+    background: var(--dp-primary);
+    color: #ffffff;
+    font-weight: 600;
+    border-color: var(--dp-primary);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+    transform: scale(1.08);
+  }
+}
+
+.dp-day--range-start::before {
+  left: 50%;
+  background: var(--dp-primary-soft);
+  border-radius: 0;
+  opacity: 1;
+}
+
+.dp-day--range-end::before {
+  right: 50%;
+  background: var(--dp-primary-soft);
+  border-radius: 0;
+  opacity: 1;
 }
 
 .dp-day--range-start.dp-day--range-end {
-  border-radius: 50%;
+  &::before {
+    right: 2px;
+    left: 2px;
+    border-radius: 999px;
+  }
 }
+
+.dp-day--selected:hover:not([disabled]) .dp-day-label,
+.dp-day--range-start:hover:not([disabled]) .dp-day-label,
+.dp-day--range-end:hover:not([disabled]) .dp-day-label {
+  background: var(--dp-primary-hover);
+  border-color: var(--dp-primary-hover);
+  transform: scale(1.12);
+}
+
+// --- Range hover preview ---
+
+.dp-day--range-preview {
+  &::before {
+    background: var(--dp-primary-soft);
+    opacity: 0.6;
+  }
+}
+
+// --- Row-level range connectors for seamless strip ---
+
+.dp-row {
+  position: relative;
+}
+
+// --- Disabled states ---
 
 .dp-day--disabled {
   color: var(--dp-text-disabled);
@@ -236,6 +399,74 @@
 .dp-day--other-month {
   color: var(--dp-text-disabled);
   opacity: 0.4;
+}
+
+// --- Blocked check-in/check-out indicators ---
+
+.dp-day--blocked-checkin,
+.dp-day--blocked-checkout {
+  .dp-day-label::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--dp-warning);
+  }
+}
+
+// --- Pricing / availability overlays ---
+
+.dp-day-price {
+  position: relative;
+  z-index: 1;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--dp-text-muted);
+  margin-top: -2px;
+  line-height: 1;
+}
+
+.dp-day--unavailable {
+  .dp-day-label {
+    text-decoration: line-through;
+    opacity: 0.4;
+  }
+}
+
+// --- Week picker row highlight ---
+
+.dp-row--week-selected {
+  .dp-day::before {
+    background: var(--dp-primary-soft);
+    opacity: 1;
+  }
+
+  .dp-day:first-child::before {
+    border-radius: 999px 0 0 999px;
+  }
+
+  .dp-day:last-child::before {
+    border-radius: 0 999px 999px 0;
+  }
+}
+
+.dp-row--week-hover:not(.dp-row--week-selected) {
+  .dp-day:not([disabled])::before {
+    background: var(--dp-primary-soft);
+    opacity: 0.5;
+  }
+
+  .dp-day:first-child::before {
+    border-radius: 999px 0 0 999px;
+  }
+
+  .dp-day:last-child::before {
+    border-radius: 0 999px 999px 0;
+  }
 }
 
 // ============================================================================
@@ -287,6 +518,13 @@
   }
 }
 
+// Month picker as selection mode
+.dp-month-cell--in-range {
+  background: var(--dp-primary-soft);
+  color: var(--dp-primary-hover);
+  font-weight: 600;
+}
+
 // ============================================================================
 // Year picker grid (4 cols x 3 rows)
 // ============================================================================
@@ -333,6 +571,313 @@
     &:hover {
       background: var(--dp-primary-hover);
     }
+  }
+}
+
+// ============================================================================
+// Quick presets bar
+// ============================================================================
+
+.dp-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 0;
+  border-top: 1px solid var(--dp-border);
+  margin-top: 8px;
+}
+
+.dp-preset-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border: 1px solid var(--dp-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--dp-text);
+  font-family: inherit;
+  font-size: calc(var(--dp-font-size) - 2px);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--dp-transition-speed) ease;
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--dp-primary-soft);
+    border-color: var(--dp-primary);
+    color: var(--dp-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--dp-primary);
+    outline-offset: -2px;
+  }
+}
+
+// ============================================================================
+// Time picker
+// ============================================================================
+
+.dp-time {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0 4px;
+  border-top: 1px solid var(--dp-border);
+  margin-top: 8px;
+}
+
+.dp-time-segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 32px;
+  border: 1px solid var(--dp-border);
+  border-radius: calc(var(--dp-radius) - 2px);
+  background: var(--dp-bg);
+  color: var(--dp-text);
+  font-family: inherit;
+  font-size: var(--dp-font-size);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  outline: none;
+
+  &:focus {
+    border-color: var(--dp-primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+  }
+}
+
+.dp-time-separator {
+  color: var(--dp-text-muted);
+  font-weight: 600;
+  font-size: calc(var(--dp-font-size) + 2px);
+}
+
+.dp-time-period {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border: 1px solid var(--dp-border);
+  border-radius: calc(var(--dp-radius) - 2px);
+  background: transparent;
+  color: var(--dp-text);
+  font-family: inherit;
+  font-size: calc(var(--dp-font-size) - 1px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--dp-transition-speed) ease;
+
+  &:hover {
+    background: var(--dp-border);
+  }
+
+  &--active {
+    background: var(--dp-primary);
+    color: #fff;
+    border-color: var(--dp-primary);
+  }
+}
+
+// ============================================================================
+// Mobile full-screen sheet
+// ============================================================================
+
+.dp-calendar--sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+  padding-top: env(safe-area-inset-top, 16px);
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+
+  .dp-sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0 16px;
+  }
+
+  .dp-sheet-title {
+    font-size: calc(var(--dp-font-size) + 4px);
+    font-weight: 700;
+    color: var(--dp-text);
+  }
+
+  .dp-sheet-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 999px;
+    background: var(--dp-border);
+    color: var(--dp-text);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+  }
+}
+
+.dp-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+// ============================================================================
+// Split native input (3 fields)
+// ============================================================================
+
+.dp-split-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+
+.dp-split-field {
+  display: inline-block;
+  border: none;
+  background: transparent;
+  color: var(--dp-text);
+  font-family: inherit;
+  font-size: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  outline: none;
+  padding: 2px 0;
+  min-width: 0;
+  caret-color: var(--dp-primary);
+
+  &::placeholder {
+    color: var(--dp-text-muted);
+    opacity: 1;
+  }
+
+  &:focus {
+    background: rgba(59, 130, 246, 0.08);
+    border-radius: 3px;
+  }
+}
+
+.dp-split-field--day,
+.dp-split-field--month {
+  width: 2.2em;
+}
+
+.dp-split-field--year {
+  width: 3.6em;
+}
+
+.dp-split-field--year-short {
+  width: 2.2em;
+}
+
+.dp-split-sep {
+  display: inline-block;
+  color: var(--dp-text-muted);
+  padding: 0 1px;
+  pointer-events: none;
+  user-select: none;
+}
+
+// ============================================================================
+// Calendar footer (clear + today buttons)
+// ============================================================================
+
+.dp-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--dp-border);
+  margin-top: 8px;
+}
+
+.dp-clear-btn,
+.dp-today-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border: 1px solid var(--dp-border);
+  border-radius: calc(var(--dp-radius) - 2px);
+  background: transparent;
+  color: var(--dp-text);
+  font-family: inherit;
+  font-size: calc(var(--dp-font-size) - 1px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--dp-transition-speed) ease;
+
+  &:hover {
+    background: var(--dp-border);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--dp-primary);
+    outline-offset: -2px;
+  }
+}
+
+.dp-clear-btn {
+  color: var(--dp-error);
+  border-color: rgba(239, 68, 68, 0.2);
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: var(--dp-error);
+  }
+}
+
+.dp-today-btn {
+  color: var(--dp-primary);
+  border-color: rgba(59, 130, 246, 0.2);
+
+  &:hover {
+    background: var(--dp-primary-soft);
+    border-color: var(--dp-primary);
+  }
+}
+
+// ============================================================================
+// Custom header slot
+// ============================================================================
+
+.dp-custom-header {
+  padding: 8px 4px 4px;
+  border-bottom: 1px solid var(--dp-border);
+  margin-bottom: 8px;
+  font-size: calc(var(--dp-font-size) - 1px);
+  color: var(--dp-text);
+}
+
+// ============================================================================
+// Portal container
+// ============================================================================
+
+.dp-portal {
+  position: absolute;
+  z-index: 99999;
+
+  .dp-calendar {
+    position: static;
   }
 }
 

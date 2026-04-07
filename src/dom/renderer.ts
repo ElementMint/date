@@ -60,8 +60,7 @@ function toISODateString(date: Date): string {
 }
 
 /**
- * Builds the ordered weekday header names array, rotated to start on
- * the configured weekStart day.
+ * Builds the ordered weekday header names array.
  */
 function getOrderedDayNames(locale: string, weekStart: number): string[] {
   const allNames = getDayNames(locale, 'narrow');
@@ -75,7 +74,7 @@ function getOrderedDayNames(locale: string, weekStart: number): string[] {
 /**
  * Creates a single day cell element.
  */
-function renderDayCell(day: CalendarDay): HTMLElement {
+function renderDayCell(day: CalendarDay, _config?: DatePickerConfig): HTMLElement {
   const classes: string[] = ['dp-day'];
   if (day.isToday) classes.push('dp-day--today');
   if (day.isSelected) classes.push('dp-day--selected');
@@ -84,6 +83,9 @@ function renderDayCell(day: CalendarDay): HTMLElement {
   if (day.isInRange) classes.push('dp-day--in-range');
   if (day.isDisabled) classes.push('dp-day--disabled');
   if (day.isOtherMonth) classes.push('dp-day--other-month');
+  if (day.available === false) classes.push('dp-day--unavailable');
+  if (day.blockedCheckIn) classes.push('dp-day--blocked-checkin');
+  if (day.blockedCheckOut) classes.push('dp-day--blocked-checkout');
 
   const isoDate = toISODateString(day.date);
 
@@ -94,7 +96,7 @@ function renderDayCell(day: CalendarDay): HTMLElement {
     role: 'gridcell',
   });
 
-  if (day.isDisabled) {
+  if (day.isDisabled || day.available === false) {
     cell.setAttribute('aria-disabled', 'true');
     cell.setAttribute('disabled', '');
   }
@@ -107,96 +109,25 @@ function renderDayCell(day: CalendarDay): HTMLElement {
     cell.setAttribute('aria-current', 'date');
   }
 
-  cell.textContent = String(day.day);
+  const label = el('span', 'dp-day-label');
+  label.textContent = String(day.day);
+  cell.appendChild(label);
+
+  // Price overlay
+  if (day.price != null && !day.isOtherMonth) {
+    const priceEl = el('span', 'dp-day-price');
+    priceEl.textContent = typeof day.price === 'number' ? `$${day.price}` : String(day.price);
+    cell.appendChild(priceEl);
+  }
 
   return cell;
 }
 
 // ============================================================================
-// Main calendar renderer (day view)
+// Weekday row builder
 // ============================================================================
 
-/**
- * Renders a complete calendar popup DOM structure for the given month.
- *
- * Structure:
- *   .dp-calendar
- *     .dp-header
- *       button.dp-nav-prev
- *       .dp-title
- *         button.dp-month-btn  (clickable month name)
- *         button.dp-year-btn   (clickable year)
- *       button.dp-nav-next
- *     .dp-weekdays (role="row")
- *     .dp-body
- *       .dp-grid (role="grid") — day view (default)
- *       .dp-months-grid        — month picker (hidden by default)
- *       .dp-years-grid         — year picker (hidden by default)
- */
-export function renderCalendar(
-  month: CalendarMonth,
-  config: RenderConfig,
-): HTMLElement {
-  const direction = getTextDirection(config.locale);
-  const monthNames = getMonthNames(config.locale, 'long');
-  const monthName = monthNames[month.month] ?? '';
-
-  // Root container
-  const calendar = el('div', 'dp-calendar', {
-    role: 'dialog',
-    'aria-label': `Calendar: ${monthName} ${month.year}`,
-    dir: direction,
-    'data-view': 'days',
-  });
-
-  // Header
-  const header = el('div', 'dp-header');
-
-  const prevBtn = el('button', 'dp-nav-prev', {
-    type: 'button',
-    'aria-label': 'Previous',
-    'data-action': 'prev',
-  });
-  prevBtn.innerHTML = (config as RenderConfig).iconPrev ?? DEFAULT_ICON_PREV;
-
-  const title = el('div', 'dp-title', {
-    'aria-live': 'polite',
-    role: 'heading',
-    'aria-level': '2',
-  });
-
-  // Clickable month button
-  const monthBtn = el('button', 'dp-month-btn', {
-    type: 'button',
-    'aria-label': `Select month, current: ${monthName}`,
-    'data-action': 'show-months',
-  });
-  monthBtn.textContent = monthName;
-
-  // Clickable year button
-  const yearBtn = el('button', 'dp-year-btn', {
-    type: 'button',
-    'aria-label': `Select year, current: ${month.year}`,
-    'data-action': 'show-years',
-  });
-  yearBtn.textContent = String(month.year);
-
-  title.appendChild(monthBtn);
-  title.appendChild(yearBtn);
-
-  const nextBtn = el('button', 'dp-nav-next', {
-    type: 'button',
-    'aria-label': 'Next',
-    'data-action': 'next',
-  });
-  nextBtn.innerHTML = (config as RenderConfig).iconNext ?? DEFAULT_ICON_NEXT;
-
-  header.appendChild(prevBtn);
-  header.appendChild(title);
-  header.appendChild(nextBtn);
-  calendar.appendChild(header);
-
-  // Weekday headers
+function buildWeekdayRow(config: RenderConfig): HTMLElement {
   const weekdayRow = el('div', 'dp-weekdays', { role: 'row' });
   const dayNames = getOrderedDayNames(config.locale, config.weekStart);
   const fullDayNames = getDayNames(config.locale, 'long');
@@ -213,12 +144,17 @@ export function renderCalendar(
     dayHeader.textContent = dayNames[i];
     weekdayRow.appendChild(dayHeader);
   }
-  calendar.appendChild(weekdayRow);
+  return weekdayRow;
+}
 
-  // Body container (holds all three views)
-  const body = el('div', 'dp-body');
+// ============================================================================
+// Day grid builder
+// ============================================================================
 
-  // Day grid (default view)
+function buildDayGrid(month: CalendarMonth, config: RenderConfig): HTMLElement {
+  const monthNames = getMonthNames(config.locale, 'long');
+  const monthName = monthNames[month.month] ?? '';
+
   const grid = el('div', 'dp-grid', {
     role: 'grid',
     'aria-label': `${monthName} ${month.year}`,
@@ -228,12 +164,86 @@ export function renderCalendar(
     const weekRow = el('div', 'dp-row', { role: 'row' });
     const week = month.days[row];
     for (let col = 0; col < week.length; col++) {
-      weekRow.appendChild(renderDayCell(week[col]));
+      weekRow.appendChild(renderDayCell(week[col], config));
     }
     grid.appendChild(weekRow);
   }
 
-  body.appendChild(grid);
+  return grid;
+}
+
+// ============================================================================
+// Single month panel (header + weekdays + grid)
+// ============================================================================
+
+function buildMonthPanel(
+  month: CalendarMonth,
+  config: RenderConfig,
+  opts: { showPrev: boolean; showNext: boolean },
+): HTMLElement {
+  const panel = el('div', 'dp-month-panel');
+  const monthNames = getMonthNames(config.locale, 'long');
+  const monthName = monthNames[month.month] ?? '';
+
+  // Header
+  const header = el('div', 'dp-header');
+
+  if (opts.showPrev) {
+    const prevBtn = el('button', 'dp-nav-prev', {
+      type: 'button',
+      'aria-label': 'Previous',
+      'data-action': 'prev',
+    });
+    prevBtn.innerHTML = (config as RenderConfig).iconPrev ?? DEFAULT_ICON_PREV;
+    header.appendChild(prevBtn);
+  } else {
+    header.appendChild(el('div'));
+  }
+
+  const title = el('div', 'dp-title', {
+    'aria-live': 'polite',
+    role: 'heading',
+    'aria-level': '2',
+  });
+
+  const monthBtn = el('button', 'dp-month-btn', {
+    type: 'button',
+    'aria-label': `Select month, current: ${monthName}`,
+    'data-action': 'show-months',
+  });
+  monthBtn.textContent = monthName;
+
+  const yearBtn = el('button', 'dp-year-btn', {
+    type: 'button',
+    'aria-label': `Select year, current: ${month.year}`,
+    'data-action': 'show-years',
+  });
+  yearBtn.textContent = String(month.year);
+
+  title.appendChild(monthBtn);
+  title.appendChild(yearBtn);
+  header.appendChild(title);
+
+  if (opts.showNext) {
+    const nextBtn = el('button', 'dp-nav-next', {
+      type: 'button',
+      'aria-label': 'Next',
+      'data-action': 'next',
+    });
+    nextBtn.innerHTML = (config as RenderConfig).iconNext ?? DEFAULT_ICON_NEXT;
+    header.appendChild(nextBtn);
+  } else {
+    header.appendChild(el('div'));
+  }
+
+  panel.appendChild(header);
+
+  // Weekday headers
+  panel.appendChild(buildWeekdayRow(config));
+
+  // Body with day grid
+  const body = el('div', 'dp-body');
+  body.appendChild(buildDayGrid(month, config));
 
   // Month picker (hidden initially)
   const monthsGrid = renderMonthsGrid(config.locale, month.month);
@@ -243,25 +253,212 @@ export function renderCalendar(
   const yearsGrid = renderYearsGrid(month.year, month.year);
   body.appendChild(yearsGrid);
 
-  calendar.appendChild(body);
+  panel.appendChild(body);
+
+  return panel;
+}
+
+// ============================================================================
+// Main calendar renderer
+// ============================================================================
+
+export function renderCalendar(
+  month: CalendarMonth,
+  config: RenderConfig,
+  nextMonth?: CalendarMonth,
+): HTMLElement {
+  const direction = getTextDirection(config.locale);
+  const monthNames = getMonthNames(config.locale, 'long');
+  const monthName = monthNames[month.month] ?? '';
+  const isDual = config.dualMonth && config.selectionMode === 'range' && nextMonth;
+
+  const calendarClasses = ['dp-calendar'];
+  if (isDual) calendarClasses.push('dp-calendar--dual');
+  if (config.calendarMode === 'inline') calendarClasses.push('dp-calendar--inline');
+
+  const calendar = el('div', calendarClasses, {
+    role: 'dialog',
+    'aria-label': `Calendar: ${monthName} ${month.year}`,
+    dir: direction,
+    'data-view': 'days',
+  });
+
+  if (isDual && nextMonth) {
+    // Dual month view
+    const leftPanel = buildMonthPanel(month, config, { showPrev: true, showNext: false });
+    const rightPanel = buildMonthPanel(nextMonth, config, { showPrev: false, showNext: true });
+    rightPanel.classList.add('dp-month-panel--right');
+    calendar.appendChild(leftPanel);
+    calendar.appendChild(rightPanel);
+  } else {
+    // Single month view
+    const header = el('div', 'dp-header');
+
+    const prevBtn = el('button', 'dp-nav-prev', {
+      type: 'button',
+      'aria-label': 'Previous',
+      'data-action': 'prev',
+    });
+    prevBtn.innerHTML = (config as RenderConfig).iconPrev ?? DEFAULT_ICON_PREV;
+
+    const title = el('div', 'dp-title', {
+      'aria-live': 'polite',
+      role: 'heading',
+      'aria-level': '2',
+    });
+
+    const monthBtn = el('button', 'dp-month-btn', {
+      type: 'button',
+      'aria-label': `Select month, current: ${monthName}`,
+      'data-action': 'show-months',
+    });
+    monthBtn.textContent = monthName;
+
+    const yearBtn = el('button', 'dp-year-btn', {
+      type: 'button',
+      'aria-label': `Select year, current: ${month.year}`,
+      'data-action': 'show-years',
+    });
+    yearBtn.textContent = String(month.year);
+
+    title.appendChild(monthBtn);
+    title.appendChild(yearBtn);
+
+    const nextBtn = el('button', 'dp-nav-next', {
+      type: 'button',
+      'aria-label': 'Next',
+      'data-action': 'next',
+    });
+    nextBtn.innerHTML = (config as RenderConfig).iconNext ?? DEFAULT_ICON_NEXT;
+
+    header.appendChild(prevBtn);
+    header.appendChild(title);
+    header.appendChild(nextBtn);
+    calendar.appendChild(header);
+
+    // Weekday headers
+    calendar.appendChild(buildWeekdayRow(config));
+
+    // Body container
+    const body = el('div', 'dp-body');
+
+    // Day grid
+    body.appendChild(buildDayGrid(month, config));
+
+    // Month picker
+    body.appendChild(renderMonthsGrid(config.locale, month.month));
+
+    // Year picker
+    body.appendChild(renderYearsGrid(month.year, month.year));
+
+    calendar.appendChild(body);
+  }
+
+  // Time picker
+  if (config.timePicker) {
+    calendar.appendChild(renderTimePicker(config));
+  }
+
+  // Presets bar
+  if (config.presets && config.selectionMode === 'range') {
+    calendar.appendChild(renderPresetsBar());
+  }
 
   return calendar;
+}
+
+// ============================================================================
+// Time picker panel
+// ============================================================================
+
+function renderTimePicker(config: RenderConfig): HTMLElement {
+  const wrapper = el('div', 'dp-time');
+
+  const hourInput = document.createElement('input');
+  hourInput.type = 'text';
+  hourInput.className = 'dp-time-segment';
+  hourInput.setAttribute('data-time-part', 'hour');
+  hourInput.setAttribute('inputmode', 'numeric');
+  hourInput.setAttribute('maxlength', '2');
+  hourInput.setAttribute('placeholder', 'HH');
+  hourInput.setAttribute('aria-label', 'Hour');
+  hourInput.value = '12';
+  wrapper.appendChild(hourInput);
+
+  const sep = el('span', 'dp-time-separator');
+  sep.textContent = ':';
+  wrapper.appendChild(sep);
+
+  const minInput = document.createElement('input');
+  minInput.type = 'text';
+  minInput.className = 'dp-time-segment';
+  minInput.setAttribute('data-time-part', 'minute');
+  minInput.setAttribute('inputmode', 'numeric');
+  minInput.setAttribute('maxlength', '2');
+  minInput.setAttribute('placeholder', 'MM');
+  minInput.setAttribute('aria-label', 'Minute');
+  minInput.value = '00';
+  wrapper.appendChild(minInput);
+
+  if (config.timeFormat === '12') {
+    const amBtn = el('button', ['dp-time-period', 'dp-time-period--active'], {
+      type: 'button',
+      'data-period': 'AM',
+      'aria-label': 'AM',
+    });
+    amBtn.textContent = 'AM';
+    wrapper.appendChild(amBtn);
+
+    const pmBtn = el('button', 'dp-time-period', {
+      type: 'button',
+      'data-period': 'PM',
+      'aria-label': 'PM',
+    });
+    pmBtn.textContent = 'PM';
+    wrapper.appendChild(pmBtn);
+  }
+
+  return wrapper;
+}
+
+// ============================================================================
+// Presets bar
+// ============================================================================
+
+export function renderPresetsBar(): HTMLElement {
+  const bar = el('div', 'dp-presets');
+
+  const presetDefs = [
+    { label: 'Tonight', key: 'tonight' },
+    { label: 'This Weekend', key: 'this-weekend' },
+    { label: 'Next 7 Days', key: 'next-7' },
+    { label: 'Next 30 Days', key: 'next-30' },
+  ];
+
+  for (const preset of presetDefs) {
+    const btn = el('button', 'dp-preset-btn', {
+      type: 'button',
+      'data-preset': preset.key,
+      'aria-label': preset.label,
+    });
+    btn.textContent = preset.label;
+    bar.appendChild(btn);
+  }
+
+  return bar;
 }
 
 // ============================================================================
 // Month picker panel
 // ============================================================================
 
-/**
- * Renders a 4x3 grid of month buttons.
- */
 export function renderMonthsGrid(locale: string, currentMonth: number): HTMLElement {
   const monthNames = getMonthNames(locale, 'short');
   const grid = el('div', 'dp-months-grid', {
     role: 'grid',
     'aria-label': 'Select a month',
   });
-  grid.style.display = 'none'; // hidden by default
+  grid.style.display = 'none';
 
   for (let i = 0; i < 12; i++) {
     const classes = ['dp-month-cell'];
@@ -280,9 +477,6 @@ export function renderMonthsGrid(locale: string, currentMonth: number): HTMLElem
   return grid;
 }
 
-/**
- * Updates an existing months grid to reflect a new selected month.
- */
 export function updateMonthsGrid(grid: HTMLElement, selectedMonth: number): void {
   const cells = grid.querySelectorAll('.dp-month-cell');
   cells.forEach((cell, i) => {
@@ -294,19 +488,12 @@ export function updateMonthsGrid(grid: HTMLElement, selectedMonth: number): void
 // Year picker panel
 // ============================================================================
 
-/** Number of years shown in the year picker */
 const YEAR_RANGE = 12;
 
-/**
- * Returns the start year for a year range containing the given year.
- */
 export function getYearRangeStart(year: number): number {
   return year - (year % YEAR_RANGE);
 }
 
-/**
- * Renders a 4x3 grid of year buttons for a range containing the given year.
- */
 export function renderYearsGrid(year: number, selectedYear: number): HTMLElement {
   const startYear = getYearRangeStart(year);
   const grid = el('div', 'dp-years-grid', {
@@ -314,7 +501,7 @@ export function renderYearsGrid(year: number, selectedYear: number): HTMLElement
     'aria-label': `Select a year: ${startYear} – ${startYear + YEAR_RANGE - 1}`,
     'data-range-start': String(startYear),
   });
-  grid.style.display = 'none'; // hidden by default
+  grid.style.display = 'none';
 
   for (let i = 0; i < YEAR_RANGE; i++) {
     const y = startYear + i;
@@ -334,11 +521,7 @@ export function renderYearsGrid(year: number, selectedYear: number): HTMLElement
   return grid;
 }
 
-/**
- * Rebuilds the year grid for a new range.
- */
 export function updateYearsGrid(grid: HTMLElement, rangeStart: number, selectedYear: number): void {
-  // Clear existing cells
   grid.innerHTML = '';
   grid.setAttribute('aria-label', `Select a year: ${rangeStart} – ${rangeStart + YEAR_RANGE - 1}`);
   grid.setAttribute('data-range-start', String(rangeStart));
@@ -357,4 +540,39 @@ export function updateYearsGrid(grid: HTMLElement, rangeStart: number, selectedY
     btn.textContent = String(y);
     grid.appendChild(btn);
   }
+}
+
+// ============================================================================
+// Mobile sheet wrapper
+// ============================================================================
+
+export function renderMobileSheet(calendarEl: HTMLElement, title: string): { backdrop: HTMLElement; sheet: HTMLElement } {
+  const backdrop = el('div', 'dp-sheet-backdrop');
+
+  const sheet = el('div', ['dp-calendar', 'dp-calendar--sheet']);
+  sheet.setAttribute('role', 'dialog');
+  sheet.setAttribute('aria-modal', 'true');
+  sheet.setAttribute('aria-label', title);
+
+  const sheetHeader = el('div', 'dp-sheet-header');
+
+  const sheetTitle = el('span', 'dp-sheet-title');
+  sheetTitle.textContent = title;
+
+  const closeBtn = el('button', 'dp-sheet-close', {
+    type: 'button',
+    'aria-label': 'Close',
+  });
+  closeBtn.textContent = '×';
+
+  sheetHeader.appendChild(sheetTitle);
+  sheetHeader.appendChild(closeBtn);
+  sheet.appendChild(sheetHeader);
+
+  // Move calendar content into sheet
+  while (calendarEl.firstChild) {
+    sheet.appendChild(calendarEl.firstChild);
+  }
+
+  return { backdrop, sheet };
 }

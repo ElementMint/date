@@ -1,12 +1,6 @@
 // ============================================================================
 // config.ts - Configuration parser (reads data-* attributes from elements)
 // ============================================================================
-//
-// NOTE: parseConfig() accepts an HTMLElement parameter, but this module does
-// NOT import or use any DOM APIs itself. It reads properties from the object
-// passed in. This keeps the module testable in non-browser environments by
-// passing a mock object with a `dataset` property.
-// ============================================================================
 
 import type {
   DatePickerConfig,
@@ -16,12 +10,9 @@ import type {
   SelectionMode,
   InputMode,
   AnalyticsMode,
+  CalendarMode,
 } from './types';
 
-/**
- * Default configuration values.
- * Every option has a sensible default so the picker works out of the box.
- */
 export const DEFAULT_CONFIG: DatePickerConfig = {
   format: 'YYYY-MM-DD',
   min: null,
@@ -30,6 +21,7 @@ export const DEFAULT_CONFIG: DatePickerConfig = {
   selectionMode: 'single',
   inputMode: 'segmented',
   calendar: true,
+  calendarMode: 'popup',
   locale: 'en',
   weekStart: 1,
   theme: 'system',
@@ -49,47 +41,30 @@ export const DEFAULT_CONFIG: DatePickerConfig = {
   position: 'auto',
   rangeSeparator: ' to ',
   analytics: 'events',
+  dualMonth: false,
+  minNights: 0,
+  maxNights: 0,
+  presets: false,
+  timePicker: false,
+  timeFormat: '24',
+  dayDataUrl: '',
+  mobileSheet: false,
+  mobileBreakpoint: 640,
+  disabledRules: '',
+  slideAnimation: true,
+  blockedCheckIn: '',
+  blockedCheckOut: '',
+  calendarOnly: false,
+  portal: false,
+  hideCalendarIcon: false,
+  customHeader: '',
 };
 
-/** Minimal interface for the element parameter (avoids hard DOM dependency) */
+/** Minimal interface for the element parameter */
 interface DatasetSource {
   dataset: Record<string, string | undefined>;
 }
 
-/**
- * Parses all data-* attributes from an element into a DatePickerConfig.
- *
- * Attribute mapping (kebab-case data attributes -> config keys):
- *   data-format        -> format
- *   data-min           -> min
- *   data-max           -> max
- *   data-value-type    -> valueType
- *   data-selection-mode-> selectionMode
- *   data-input-mode    -> inputMode
- *   data-calendar      -> calendar
- *   data-locale        -> locale
- *   data-week-start    -> weekStart
- *   data-theme         -> theme
- *   data-placeholder   -> placeholder
- *   data-required      -> required
- *   data-disabled-dates-> disabledDates (comma-separated ISO strings)
- *   data-validate      -> validate
- *   data-disabled      -> disabled
- *   data-read-only     -> readOnly
- *   data-name          -> name
- *   data-value         -> value
- *   data-close-on-select -> closeOnSelect
- *   data-show-today    -> showToday
- *   data-show-clear    -> showClear
- *   data-keyboard      -> keyboard
- *   data-class-name    -> className
- *   data-position      -> position
- *   data-range-separator -> rangeSeparator
- *   data-analytics     -> analytics
- *
- * @param element - An object with a `dataset` property (HTMLElement or mock)
- * @returns Parsed DatePickerConfig (unrecognized attributes are ignored)
- */
 export function parseConfig(element: DatasetSource): DatePickerConfig {
   const d = element.dataset;
 
@@ -104,7 +79,7 @@ export function parseConfig(element: DatasetSource): DatePickerConfig {
     ),
     selectionMode: parseEnum<SelectionMode>(
       d.selectionMode,
-      ['single', 'range'],
+      ['single', 'range', 'week', 'month'],
       DEFAULT_CONFIG.selectionMode,
     ),
     inputMode: parseEnum<InputMode>(
@@ -113,6 +88,11 @@ export function parseConfig(element: DatasetSource): DatePickerConfig {
       DEFAULT_CONFIG.inputMode,
     ),
     calendar: parseBool(d.calendar, DEFAULT_CONFIG.calendar),
+    calendarMode: parseEnum<CalendarMode>(
+      d.calendarMode,
+      ['popup', 'inline'],
+      DEFAULT_CONFIG.calendarMode,
+    ),
     locale: parseString(d.locale, DEFAULT_CONFIG.locale),
     weekStart: parseWeekDay(d.weekStart, DEFAULT_CONFIG.weekStart),
     theme: parseEnum<Theme>(
@@ -147,17 +127,30 @@ export function parseConfig(element: DatasetSource): DatePickerConfig {
       ['off', 'events', 'datalayer'],
       DEFAULT_CONFIG.analytics,
     ),
+    dualMonth: parseBool(d.dualMonth, DEFAULT_CONFIG.dualMonth),
+    minNights: parseNumber(d.minNights, DEFAULT_CONFIG.minNights),
+    maxNights: parseNumber(d.maxNights, DEFAULT_CONFIG.maxNights),
+    presets: parseBool(d.presets, DEFAULT_CONFIG.presets),
+    timePicker: parseBool(d.timePicker, DEFAULT_CONFIG.timePicker),
+    timeFormat: parseEnum<'12' | '24'>(
+      d.timeFormat,
+      ['12', '24'],
+      DEFAULT_CONFIG.timeFormat,
+    ),
+    dayDataUrl: parseString(d.dayDataUrl, DEFAULT_CONFIG.dayDataUrl),
+    mobileSheet: parseBool(d.mobileSheet, DEFAULT_CONFIG.mobileSheet),
+    mobileBreakpoint: parseNumber(d.mobileBreakpoint, DEFAULT_CONFIG.mobileBreakpoint),
+    disabledRules: parseString(d.disabledRules, DEFAULT_CONFIG.disabledRules),
+    slideAnimation: parseBool(d.slideAnimation, DEFAULT_CONFIG.slideAnimation),
+    blockedCheckIn: parseString(d.blockedCheckIn, DEFAULT_CONFIG.blockedCheckIn),
+    blockedCheckOut: parseString(d.blockedCheckOut, DEFAULT_CONFIG.blockedCheckOut),
+    calendarOnly: parseBool(d.calendarOnly, DEFAULT_CONFIG.calendarOnly),
+    portal: parseBool(d.portal, DEFAULT_CONFIG.portal),
+    hideCalendarIcon: parseBool(d.hideCalendarIcon, DEFAULT_CONFIG.hideCalendarIcon),
+    customHeader: parseString(d.customHeader, DEFAULT_CONFIG.customHeader),
   };
 }
 
-/**
- * Merges a partial config (from parsed attributes) with defaults.
- * Explicit `null` and `undefined` values in `parsed` are replaced by defaults.
- *
- * @param defaults - Base default config
- * @param parsed   - Partial config to overlay
- * @returns Merged DatePickerConfig
- */
 export function mergeConfig(
   defaults: DatePickerConfig,
   parsed: Partial<DatePickerConfig>,
@@ -184,7 +177,6 @@ function parseString(value: string | undefined, fallback: string): string {
 
 function parseBool(value: string | undefined, fallback: boolean): boolean {
   if (value === undefined || value === null) return fallback;
-  // data-required (no value) means the attribute is present -> true
   if (value === '') return true;
   const lower = value.toLowerCase();
   if (lower === 'true' || lower === '1' || lower === 'yes') return true;
@@ -209,6 +201,12 @@ function parseWeekDay(
   const num = parseInt(value, 10);
   if (isNaN(num) || num < 0 || num > 6) return fallback;
   return num as WeekDay;
+}
+
+function parseNumber(value: string | undefined, fallback: number): number {
+  if (value === undefined || value === null) return fallback;
+  const num = parseInt(value, 10);
+  return isNaN(num) ? fallback : num;
 }
 
 function parseCommaSeparated(value: string | undefined): string[] {

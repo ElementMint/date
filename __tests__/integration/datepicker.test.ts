@@ -254,11 +254,36 @@ describe('DatePicker integration', () => {
       input.setAttribute('data-format', 'DD/MM/YYYY');
       picker = new DatePicker(input);
 
-      input.value = '24/12/2026';
-      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.focus();
+      const keys = ['2', '4', '1', '2', '2', '0', '2', '6'];
+      for (const key of keys) {
+        input.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+      }
+
+      expect(input.value).toBe('24/12/2026');
+
       input.dispatchEvent(new Event('blur', { bubbles: true }));
 
       expect(picker.getValue()).toBe('2026-12-24');
+    });
+
+    it('supports variable-width native formats declared in HTML', () => {
+      picker.destroy();
+      input.setAttribute('data-calendar', 'false');
+      input.setAttribute('data-input-mode', 'native');
+      input.setAttribute('data-format', 'D.M.YYYY');
+      picker = new DatePicker(input);
+
+      input.focus();
+      const keys = ['4', '.', '2', '.', '2', '0', '2', '6'];
+      for (const key of keys) {
+        input.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+      }
+
+      expect(input.value).toBe('4.2.2026');
+
+      input.dispatchEvent(new Event('blur', { bubbles: true }));
+      expect(picker.getValue()).toBe('2026-02-04');
     });
 
     it('emits analytics events when enabled', () => {

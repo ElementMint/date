@@ -101,13 +101,16 @@ function updateTitle(
 function updateDayCell(cell: HTMLElement, day: CalendarDay): void {
   const newDateStr = toISODateString(day.date);
   const oldDateStr = cell.getAttribute('data-date');
+  const label = cell.querySelector('.dp-day-label');
 
   if (oldDateStr !== newDateStr) {
     cell.setAttribute('data-date', newDateStr);
     cell.setAttribute('aria-label', newDateStr);
-    cell.textContent = String(day.day);
-  } else if (cell.textContent !== String(day.day)) {
-    cell.textContent = String(day.day);
+    if (label) {
+      label.textContent = String(day.day);
+    }
+  } else if (label && label.textContent !== String(day.day)) {
+    label.textContent = String(day.day);
   }
 
   toggleClass(cell, CLS_TODAY, day.isToday);

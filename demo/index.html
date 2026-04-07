@@ -3,451 +3,940 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>@elementmints/date - Playground Demo</title>
-  <link rel="stylesheet" href="./dist/date.min.css">
+  <title>@elementmints/date - Interactive Demo</title>
+  <script>
+    (() => {
+      const path = window.location.pathname;
+      const assetBase = path.includes('/demo/') ? '..' : '.';
+      window.__DATE_DEMO_ASSET_BASE__ = assetBase;
+
+      const style = document.createElement('link');
+      style.rel = 'stylesheet';
+      style.href = `${assetBase}/dist/date.min.css`;
+      document.head.appendChild(style);
+    })();
+  </script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; }
 
     :root {
-      --page-bg: linear-gradient(180deg, #f8fbff 0%, #eef4ff 44%, #f8fafc 100%);
-      --page-text: #142033;
-      --page-muted: #5c6d83;
-      --card-bg: rgba(255, 255, 255, 0.9);
-      --card-border: rgba(148, 163, 184, 0.28);
-      --editor-bg: #0f172a;
-      --editor-text: #dbeafe;
-      --surface-soft: #f8fafc;
-      --accent: #2563eb;
-      --accent-soft: rgba(37, 99, 235, 0.12);
-      --success: #0f766e;
+      --page-bg: #fafbfc;
+      --page-text: #111827;
+      --page-muted: #6b7280;
+      --page-line: #e5e7eb;
+      --card-bg: #ffffff;
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --card-shadow-lg: 0 4px 24px rgba(0,0,0,0.08);
+      --accent: #3b82f6;
+      --accent-soft: rgba(59,130,246,0.08);
+      --accent-warm: #ea580c;
+      --success: #059669;
+      --mono: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --radius: 12px;
     }
 
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --page-bg: radial-gradient(circle at top, #172554 0%, #0f172a 48%, #020617 100%);
-        --page-text: #e2e8f0;
-        --page-muted: #94a3b8;
-        --card-bg: rgba(15, 23, 42, 0.82);
-        --card-border: rgba(96, 165, 250, 0.22);
-        --editor-bg: #020617;
-        --editor-text: #bfdbfe;
-        --surface-soft: rgba(15, 23, 42, 0.72);
-        --accent: #60a5fa;
-        --accent-soft: rgba(96, 165, 250, 0.15);
-        --success: #5eead4;
-      }
+    html[data-page-theme="dark"] {
+      --page-bg: #0f172a;
+      --page-text: #f1f5f9;
+      --page-muted: #94a3b8;
+      --page-line: #334155;
+      --card-bg: #1e293b;
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+      --card-shadow-lg: 0 4px 24px rgba(0,0,0,0.4);
+      --accent-soft: rgba(59,130,246,0.15);
     }
+
+    html[data-page-theme="dark"] .preview-area {
+      background: #1a2332;
+      border-color: #334155;
+    }
+
+    html[data-page-theme="dark"] .card-status {
+      background: rgba(5,150,105,0.1);
+      border-color: rgba(5,150,105,0.25);
+    }
+
+    html[data-page-theme="dark"] .card-code {
+      background: #0f172a;
+    }
+
+    html { scroll-behavior: smooth; }
 
     body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: "DM Sans", "Segoe UI", sans-serif;
-      line-height: 1.55;
+      font-family: var(--sans);
       color: var(--page-text);
       background: var(--page-bg);
-      padding: 32px 18px 56px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
     .shell {
-      width: min(1120px, 100%);
+      width: min(1200px, 100% - 32px);
       margin: 0 auto;
+      padding: 32px 0 64px;
     }
 
-    .hero {
-      padding: 32px;
-      border-radius: 28px;
-      border: 1px solid var(--card-border);
-      background:
-        linear-gradient(135deg, rgba(37, 99, 235, 0.12), transparent 46%),
-        linear-gradient(180deg, var(--card-bg), rgba(255, 255, 255, 0.58));
-      backdrop-filter: blur(18px);
-      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.14);
-      margin-bottom: 24px;
+    /* ---------- Header ---------- */
+    .header {
+      text-align: center;
+      padding: 48px 0 40px;
     }
 
-    .eyebrow {
+    .header h1 {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+
+    .header p {
+      color: var(--page-muted);
+      font-size: 1.05rem;
+      max-width: 600px;
+      margin: 0 auto 24px;
+    }
+
+    .feature-chips {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .chip {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 6px 12px;
+      gap: 6px;
+      padding: 6px 14px;
       border-radius: 999px;
-      background: var(--accent-soft);
-      color: var(--accent);
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    .hero h1 {
-      margin: 18px 0 10px;
-      font-size: clamp(2rem, 4vw, 3.4rem);
-      line-height: 1.02;
-      letter-spacing: -0.04em;
-    }
-
-    .hero p {
-      max-width: 760px;
-      color: var(--page-muted);
-      font-size: 1.05rem;
-      margin: 0;
-    }
-
-    .hero-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      margin-top: 22px;
-    }
-
-    .hero-chip {
-      padding: 14px 16px;
-      border-radius: 18px;
-      border: 1px solid var(--card-border);
-      background: rgba(255, 255, 255, 0.55);
-      font-size: 0.95rem;
-      font-weight: 600;
-    }
-
-    .intro {
-      display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
-      gap: 18px;
-      margin-bottom: 24px;
-    }
-
-    .panel {
-      border: 1px solid var(--card-border);
-      border-radius: 24px;
       background: var(--card-bg);
-      backdrop-filter: blur(12px);
-      padding: 22px;
+      border: 1px solid var(--page-line);
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--page-text);
+      white-space: nowrap;
     }
 
-    .panel h2 {
-      margin: 0 0 10px;
-      font-size: 1.05rem;
-      letter-spacing: -0.02em;
+    .chip--accent { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+
+    /* ---------- Theme Toggle ---------- */
+    .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 20px;
+      border-radius: 999px;
+      background: var(--card-bg);
+      border: 1px solid var(--page-line);
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--page-text);
+      transition: all 0.2s ease;
+      user-select: none;
     }
 
-    .panel p {
-      margin: 0;
-      color: var(--page-muted);
-      font-size: 0.95rem;
+    .theme-toggle:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
     }
 
-    .panel ul {
-      margin: 14px 0 0;
-      padding-left: 18px;
-      color: var(--page-muted);
+    .theme-toggle-track {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      border-radius: 12px;
+      background: var(--page-line);
+      transition: background-color 0.3s ease;
     }
 
-    .playgrounds {
+    .theme-toggle-track::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+      transition: transform 0.3s ease;
+    }
+
+    html[data-page-theme="dark"] .theme-toggle-track {
+      background: var(--accent);
+    }
+
+    html[data-page-theme="dark"] .theme-toggle-track::after {
+      transform: translateX(20px);
+    }
+
+    /* ---------- Grid ---------- */
+    .demos {
       display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr));
       gap: 20px;
     }
 
-    .playground {
-      border: 1px solid var(--card-border);
-      border-radius: 24px;
+    /* ---------- Card ---------- */
+    .card {
       background: var(--card-bg);
-      backdrop-filter: blur(12px);
-      overflow: hidden;
-      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.09);
+      border: 1px solid var(--page-line);
+      border-radius: var(--radius);
+      box-shadow: var(--card-shadow);
+      transition: box-shadow 0.2s ease, background-color 0.3s ease, border-color 0.3s ease;
     }
 
-    .playground-head {
-      padding: 22px 22px 14px;
-      border-bottom: 1px solid var(--card-border);
-      background: linear-gradient(180deg, rgba(37, 99, 235, 0.08), transparent);
+    .card:hover { box-shadow: var(--card-shadow-lg); }
+
+    .card-head {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--page-line);
     }
 
-    .playground-head h3 {
-      margin: 0 0 6px;
-      font-size: 1.18rem;
-      letter-spacing: -0.02em;
+    .card-head h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin-bottom: 6px;
     }
 
-    .playground-head p {
-      margin: 0;
-      color: var(--page-muted);
-      font-size: 0.95rem;
-    }
-
-    .playground-body {
-      padding: 18px 22px 22px;
-    }
-
-    .playground-preview {
-      padding: 18px;
-      border-radius: 20px;
-      border: 1px dashed var(--card-border);
-      background: var(--surface-soft);
-      margin-bottom: 14px;
-    }
-
-    .playground-mount {
-      min-height: 78px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .playground-note {
-      margin: 10px 0 0;
+    .card-head p {
       color: var(--page-muted);
       font-size: 0.88rem;
+      line-height: 1.5;
     }
 
-    .playground-label {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 0.8rem;
+    .card-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .badge {
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
       font-weight: 700;
-      color: var(--page-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .badge--warm { background: rgba(234,88,12,0.08); color: var(--accent-warm); }
+    .badge--green { background: rgba(5,150,105,0.08); color: var(--success); }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    .preview-area {
+      min-height: 80px;
+      padding: 20px;
+      border: 1px dashed var(--page-line);
+      border-radius: 8px;
+      background: #f9fafb;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    .card-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--success);
+      min-height: 36px;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    .card-code {
+      border-top: 1px solid var(--page-line);
+      padding: 16px 20px;
+      background: #f8fafc;
+      transition: background-color 0.3s ease;
+    }
+
+    .card-code label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
+      color: var(--page-muted);
+      margin-bottom: 8px;
     }
 
-    .playground-editor {
+    .editor {
       width: 100%;
-      min-height: 150px;
-      border: 1px solid rgba(148, 163, 184, 0.28);
-      border-radius: 18px;
-      background: var(--editor-bg);
-      color: var(--editor-text);
-      padding: 16px;
-      font: 500 0.88rem/1.55 "SFMono-Regular", Consolas, Monaco, monospace;
+      min-height: 140px;
+      border: 1px solid var(--page-line);
+      border-radius: 8px;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 14px;
+      font: 500 0.82rem/1.6 var(--mono);
       resize: vertical;
       outline: none;
+      tab-size: 2;
     }
 
-    .playground-editor:focus {
+    .editor:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 4px var(--accent-soft);
+      box-shadow: 0 0 0 3px var(--accent-soft);
     }
 
-    .playground-log {
-      margin-top: 14px;
-      padding: 14px 16px;
-      border-radius: 18px;
-      background: rgba(15, 23, 42, 0.92);
-      color: #dbeafe;
-      min-height: 120px;
-      font: 500 0.82rem/1.5 "SFMono-Regular", Consolas, Monaco, monospace;
-      white-space: pre-wrap;
-      overflow: auto;
-    }
-
-    .kbd {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 28px;
-      padding: 3px 7px;
+    .event-log {
+      margin-top: 12px;
+      padding: 12px;
+      min-height: 100px;
+      max-height: 200px;
+      overflow-y: auto;
       border-radius: 8px;
-      border: 1px solid var(--card-border);
-      background: rgba(255, 255, 255, 0.75);
-      font: 700 0.76rem/1 "SFMono-Regular", Consolas, Monaco, monospace;
-      color: var(--page-text);
-      margin: 0 3px;
+      background: #0f172a;
+      color: #94a3b8;
+      font: 500 0.78rem/1.5 var(--mono);
+      white-space: pre-wrap;
     }
 
-    .footer {
-      margin-top: 24px;
-      padding: 22px;
-      border-radius: 20px;
-      border: 1px solid var(--card-border);
-      background: var(--card-bg);
+    .card-note {
+      margin-top: 10px;
+      font-size: 0.82rem;
       color: var(--page-muted);
-      font-size: 0.92rem;
+    }
+
+    /* ---------- Full-width card ---------- */
+    .card--full {
+      grid-column: 1 / -1;
+    }
+
+    /* ---------- Footer ---------- */
+    .footer {
+      margin-top: 32px;
+      padding: 16px 0;
+      text-align: center;
+      color: var(--page-muted);
+      font-size: 0.88rem;
     }
 
     .footer a {
       color: var(--accent);
       text-decoration: none;
+      font-weight: 600;
     }
 
-    @media (max-width: 860px) {
-      .intro {
-        grid-template-columns: 1fr;
-      }
+    /* ---------- Responsive ---------- */
+    @media (max-width: 720px) {
+      .shell { padding: 16px 0 40px; }
+      .header { padding: 32px 0 28px; }
+      .demos { gap: 16px; }
+      .card-body, .card-code, .card-head { padding: 16px; }
+      .preview-area { padding: 16px; }
+    }
+    .dp-input input{
+      border:0;
+      outline: none;
+      background-color: transparent;
     }
   </style>
 </head>
 <body>
   <div class="shell">
-    <section class="hero">
-      <span class="eyebrow">Live Playground Demo</span>
-      <h1>Build hotel-style ranges, native typing flows, and analytics-ready date inputs.</h1>
-      <p>
-        This page shows the upgraded @elementmints/date picker in realistic product modes.
-        Edit the markup under each example and the preview updates live.
-      </p>
-      <div class="hero-grid">
-        <div class="hero-chip">Single-date segmented input</div>
-        <div class="hero-chip">Hotel booking range selection</div>
-        <div class="hero-chip">Native manual entry mode</div>
-        <div class="hero-chip">Touch swipe month navigation</div>
-        <div class="hero-chip">Analytics event stream</div>
+    <header class="header">
+      <h1>@elementmints/date</h1>
+      <p>Zero-dependency date picker with range selection, swipe navigation, dual-month booking, time picking, and more.</p>
+      <div class="feature-chips">
+        <span class="chip chip--accent">Slide animation</span>
+        <span class="chip">Split native input</span>
+        <span class="chip chip--accent">Dual-month range</span>
+        <span class="chip">Quick presets</span>
+        <span class="chip">Time picker</span>
+        <span class="chip chip--accent">Week & month modes</span>
+        <span class="chip">Inline calendar</span>
+        <span class="chip">Mobile sheet</span>
+        <span class="chip chip--accent">Portal mode</span>
+        <span class="chip">Calendar only</span>
+        <span class="chip chip--accent">Custom header</span>
+        <span class="chip">Clear button</span>
       </div>
-    </section>
+      <div style="display:flex;justify-content:center;margin-top:8px;">
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark/light theme">
+          <span class="theme-toggle-icon">&#9728;</span>
+          <span class="theme-toggle-track"></span>
+          <span class="theme-toggle-icon">&#9790;</span>
+        </button>
+      </div>
+    </header>
 
-    <section class="intro">
-      <article class="panel">
-        <h2>How To Use This Demo</h2>
-        <p>
-          Each card has a live preview first and a code editor underneath it.
-          Change the HTML, wait a moment, and the date picker re-initializes with your new markup.
-        </p>
-      </article>
-      <article class="panel">
-        <h2>Quick Tips</h2>
-        <ul>
-          <li>Use <span class="kbd">←</span> <span class="kbd">→</span> to move between segments in segmented mode.</li>
-          <li>Swipe left or right on touch devices while the calendar is open to change months.</li>
-          <li>For manual typing, set <code>data-input-mode="native"</code> and <code>data-calendar="false"</code>.</li>
-        </ul>
-      </article>
-    </section>
+    <main class="demos">
 
-    <main class="playgrounds">
-      <section class="playground" data-playground>
-        <div class="playground-head">
-          <h3>Segmented Single-Date Picker</h3>
-          <p>Fast guided entry for forms where the calendar is helpful but keyboard input still matters.</p>
-        </div>
-        <div class="playground-body">
-          <div class="playground-preview">
-            <div class="playground-mount"></div>
-            <p class="playground-note">Try keyboarding through the segments, then open the calendar with the toggle.</p>
+      <!-- 1. Split Native Input -->
+      <section class="card" data-playground data-default-status="Type into each field. Auto-advances when full.">
+        <div class="card-head">
+          <h3>Split Native Input</h3>
+          <p>Three separate fields for day, month, and year with clear placeholders. Supports single D and M formats. Auto-advances on segment completion.</p>
+          <div class="card-badges">
+            <span class="badge">Native mode</span>
+            <span class="badge">Split fields</span>
+            <span class="badge">Auto-advance</span>
           </div>
-          <label class="playground-label" for="editor-basic">Live Markup</label>
-          <textarea id="editor-basic" class="playground-editor">&lt;input
+        </div>
+        <div class="card-body">
+          <div class="preview-area">
+            <div class="playground-mount"></div>
+          </div>
+          <div class="card-status"><span class="status-dot"></span><span class="playground-status-text"></span></div>
+        </div>
+        <div class="card-code">
+          <label>Live Markup</label>
+          <textarea class="editor playground-editor" aria-label="Split native input markup">&lt;input
   type="text"
   data-datepicker
+  data-input-mode="native"
+  data-calendar="true"
   data-format="DD/MM/YYYY"
-  placeholder="Choose a travel date"&gt;</textarea>
+  data-theme="light"
+  placeholder="DD/MM/YYYY"&gt;</textarea>
         </div>
       </section>
 
-      <section class="playground" data-playground>
-        <div class="playground-head">
-          <h3>Hotel Booking Range Picker</h3>
-          <p>Pick check-in and check-out in a single control with hotel-style range selection.</p>
-        </div>
-        <div class="playground-body">
-          <div class="playground-preview">
-            <div class="playground-mount"></div>
-            <p class="playground-note">Click one date for check-in, then a second date for check-out. A later click starts a new stay.</p>
+      <!-- 2. Segmented Single -->
+      <section class="card" data-playground data-default-status="Segmented mode guides the caret for fast keyboard entry.">
+        <div class="card-head">
+          <h3>Segmented Single-Date</h3>
+          <p>Guided segment editing with Tab/Arrow navigation. Calendar popup with slide animation on month change.</p>
+          <div class="card-badges">
+            <span class="badge">Segmented</span>
+            <span class="badge">Keyboard</span>
+            <span class="badge">Slide animation</span>
           </div>
-          <label class="playground-label" for="editor-range">Live Markup</label>
-          <textarea id="editor-range" class="playground-editor">&lt;input
+        </div>
+        <div class="card-body">
+          <div class="preview-area">
+            <div class="playground-mount"></div>
+          </div>
+          <div class="card-status"><span class="status-dot"></span><span class="playground-status-text"></span></div>
+        </div>
+        <div class="card-code">
+          <label>Live Markup</label>
+          <textarea class="editor playground-editor" aria-label="Segmented single-date markup">&lt;input
+  type="text"
+  data-datepicker
+  data-format="DD/MM/YYYY"
+  data-slide-animation="true"
+  data-theme="light"
+  placeholder="Choose a date"&gt;</textarea>
+        </div>
+      </section>
+
+      <!-- 3. Dual-Month Hotel Booking -->
+      <section class="card card--full" data-playground data-default-status="Pick a check-in date, then check-out. Dual-month shows both months.">
+        <div class="card-head">
+          <h3>Dual-Month Hotel Booking</h3>
+          <p>Two months side by side for booking flows. Min 2 nights, max 14 nights. Quick preset buttons for Tonight, This Weekend, Next 7 Days. Blocked check-in on Sundays. Calendar-only mode prevents manual typing.</p>
+          <div class="card-badges">
+            <span class="badge badge--warm">Dual month</span>
+            <span class="badge badge--warm">Min/max nights</span>
+            <span class="badge badge--warm">Presets</span>
+            <span class="badge badge--warm">Blocked days</span>
+            <span class="badge badge--warm">Calendar only</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="preview-area">
+            <div class="playground-mount"></div>
+          </div>
+          <div class="card-status"><span class="status-dot"></span><span class="playground-status-text"></span></div>
+        </div>
+        <div class="card-code">
+          <label>Live Markup</label>
+          <textarea class="editor playground-editor" aria-label="Dual-month hotel booking markup" style="min-height: 200px">&lt;input
   type="text"
   data-datepicker
   data-selection-mode="range"
   data-format="DD MMM YYYY"
   data-range-separator=" to "
+  data-dual-month="true"
+  data-presets="true"
+  data-min-nights="2"
+  data-max-nights="14"
+  data-blocked-check-in="0"
   data-min="2026-01-01"
+  data-slide-animation="true"
+  data-calendar-only="true"
+  data-theme="light"
   placeholder="Select check-in to check-out"&gt;</textarea>
         </div>
       </section>
 
-      <section class="playground" data-playground>
-        <div class="playground-head">
-          <h3>Native Manual Input</h3>
-          <p>Turns off the popup calendar and lets the browser handle cursor movement, backspace, and typing naturally.</p>
-        </div>
-        <div class="playground-body">
-          <div class="playground-preview">
-            <div class="playground-mount"></div>
-            <p class="playground-note">This behaves like a natural text input. Type the date manually and use the arrow keys freely.</p>
+      <!-- 4. Range Calendar-Only -->
+      <section class="card" data-playground data-default-status="Select two dates from the calendar. Manual input is disabled.">
+        <div class="card-head">
+          <h3>Range Selection (Calendar Only)</h3>
+          <p>Range selection where input is read-only. Users must select dates from the calendar popup. Includes clear button.</p>
+          <div class="card-badges">
+            <span class="badge badge--warm">Range mode</span>
+            <span class="badge badge--warm">Calendar only</span>
+            <span class="badge badge--warm">Clear button</span>
           </div>
-          <label class="playground-label" for="editor-native">Live Markup</label>
-          <textarea id="editor-native" class="playground-editor">&lt;input
+        </div>
+        <div class="card-body">
+          <div class="preview-area">
+            <div class="playground-mount"></div>
+          </div>
+          <div class="card-status"><span class="status-dot"></span><span class="playground-status-text"></span></div>
+        </div>
+        <div class="card-code">
+          <label>Live Markup</label>
+          <textarea class="editor playground-editor" aria-label="Range calendar-only markup">&lt;input
   type="text"
   data-datepicker
-  data-input-mode="native"
-  data-calendar="false"
-  data-format="DD/MM/YYYY"
-  placeholder="Type 24/12/2026 manually"&gt;</textarea>
+  data-selection-mode="range"
+  data-format="DD MMM YYYY"
+  data-range-separator=" &mdash; "
+  data-min="2026-01-01"
+  data-calendar-only="true"
+  data-show-clear="true"
+  data-theme="light"
+  placeholder="Select a date range"&gt;</textarea>
         </div>
       </section>
 
-      <section class="playground" data-playground data-log-events="true">
-        <div class="playground-head">
-          <h3>Analytics + Touch Playground</h3>
-          <p>Emits analytics events for open, select, range completion, navigation, and swipe gestures.</p>
-        </div>
-        <div class="playground-body">
-          <div class="playground-preview">
-            <div class="playground-mount"></div>
-            <p class="playground-note">Open the calendar and interact with it. On mobile, swipe left or right across the calendar body to change month.</p>
+      <!-- 5. Week Picker (Calendar Only) -->
+      <section class="card" data-playground data-default-status="Click any day to select the entire week.">
+        <div class="card-head">
+          <h3>Week Picker (Calendar Only)</h3>
+          <p>Click any day to select the whole week. Calendar-only mode ensures selection is from the calendar. Row highlights on hover.</p>
+          <div class="card-badges">
+            <span class="badge badge--green">Week mode</span>
+            <span class="badge badge--green">Calendar only</span>
+            <span class="badge badge--green">Row highlight</span>
           </div>
-          <label class="playground-label" for="editor-analytics">Live Markup</label>
-          <textarea id="editor-analytics" class="playground-editor">&lt;input
+        </div>
+        <div class="card-body">
+          <div class="preview-area">
+            <div class="playground-mount"></div>
+          </div>
+          <div class="card-status"><span class="status-dot"></span><span class="playground-status-text"></span></div>
+        </div>
+        <div class="card-code">
+          <label>Live Markup</label>
+          <textarea class="editor playground-editor" aria-label="Week picker markup">&lt;input
+  type="text"
+  data-datepicker
+  data-selection-mode="week"
+  data-format="DD/MM/YYYY"
+  data-range-separator=" - "
+  data-calendar-only="true"
+  data-theme="light"
+  placeholder="Select a week"&gt;</textarea>
+        </div>
+      </section>
+
+      <!-- 6. Month Picker (Calendar Only) -->
+      <section class="card" data-playground data-default-status="Click a month to select it.">
+        <div class="card-head">
+          <h3>Month Picker (Calendar Only)</h3>
+          <p>Opens directly to the month selection grid. Calendar-only mode prevents manual entry.</p>
+          <div class="card-badges">
+            <span class="badge badge--green">Month mode</span>
+            <span class="badge badge--green">Calendar only</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="preview-area">
+            <div class="playground-mount"></div>
+          </div>
+          <div class="card-status"><span class="status-dot"></span><span class="playground-status-text"></span></div>
+        </div>
+        <div class="card-code">
+          <label>Live Markup</label>
+          <textarea class="editor playground-editor" aria-label="Month picker markup">&lt;input
+  type="text"
+  data-datepicker
+  data-selection-mode="month"
+  data-format="MMMM YYYY"
+  data-calendar-only="true"
+  data-theme="light"
+  placeholder="Select a month"&gt;</textarea>
+        </div>
+      </section>
+
+      <!-- 7. Inline Calendar -->
+      <section class="card" data-playground data-default-status="Calendar is always visible. Click to select.">
+        <div class="card-head">
+          <h3>Inline Calendar</h3>
+          <p>Calendar renders inline (not as a popup). Great for embedding in settings panels, dashboards, or sidebars.</p>
+          <div class="card-badges">
+            <span class="badge">Inline mode</span>
+            <span class="badge">Always visible</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="preview-area" style="min-height: 300px">
+            <div class="playground-mount"></div>
+          </div>
+          <div class="card-status"><span class="status-dot"></span><span class="playground-status-text"></span></div>
+        </div>
+        <div class="card-code">
+          <label>Live Markup</label>
+          <textarea class="editor playground-editor" aria-label="Inline calendar markup">&lt;input
+  type="text"
+  data-datepicker
+  data-calendar-mode="inline"
+  data-format="YYYY-MM-DD"
+  data-close-on-select="false"
+  data-show-clear="true"
+  data-theme="light"
+  placeholder="Inline calendar"&gt;</textarea>
+        </div>
+      </section>
+
+      <!-- 8. Date + Time Picker -->
+      <section class="card" data-playground data-default-status="Select a date and time.">
+        <div class="card-head">
+          <h3>Date + Time Picker</h3>
+          <p>Combined date and time selection. Supports 12-hour and 24-hour formats with hour/minute inputs.</p>
+          <div class="card-badges">
+            <span class="badge">Time picker</span>
+            <span class="badge">12h / 24h</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="preview-area">
+            <div class="playground-mount"></div>
+          </div>
+          <div class="card-status"><span class="status-dot"></span><span class="playground-status-text"></span></div>
+        </div>
+        <div class="card-code">
+          <label>Live Markup</label>
+          <textarea class="editor playground-editor" aria-label="Date time picker markup">&lt;input
+  type="text"
+  data-datepicker
+  data-format="DD/MM/YYYY"
+  data-time-picker="true"
+  data-time-format="12"
+  data-close-on-select="false"
+  data-theme="light"
+  placeholder="Date and time"&gt;</textarea>
+        </div>
+      </section>
+
+      <!-- 9. Disabled Dates Validation -->
+      <section class="card" data-playground data-default-status="Weekends and holidays are disabled. Manual entry is blocked too.">
+        <div class="card-head">
+          <h3>Disabled Dates + Validation</h3>
+          <p>Disable weekends via recurring rules. If you manually type a disabled date, an error is shown. Calendar-only mode recommended for strict enforcement.</p>
+          <div class="card-badges">
+            <span class="badge badge--green">Disabled rules</span>
+            <span class="badge badge--green">Input validation</span>
+            <span class="badge badge--green">Calendar only</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="preview-area">
+            <div class="playground-mount"></div>
+          </div>
+          <div class="card-status"><span class="status-dot"></span><span class="playground-status-text"></span></div>
+        </div>
+        <div class="card-code">
+          <label>Live Markup</label>
+          <textarea class="editor playground-editor" aria-label="Disabled dates validation markup">&lt;input
+  type="text"
+  data-datepicker
+  data-format="YYYY-MM-DD"
+  data-calendar-only="true"
+  data-disabled-rules='[{"type":"weekday","days":[0,6]},{"type":"yearly","month":12,"day":25},{"type":"yearly","month":1,"day":1}]'
+  data-show-clear="true"
+  data-theme="light"
+  placeholder="No weekends or holidays"&gt;</textarea>
+        </div>
+      </section>
+
+      <!-- 10. Portal Mode -->
+      <section class="card" data-playground data-default-status="Calendar opens as a portal appended to document body.">
+        <div class="card-head">
+          <h3>Portal Mode</h3>
+          <p>Calendar is appended to document.body as a portal, avoiding overflow clipping from parent containers. Position auto-adjusts to viewport.</p>
+          <div class="card-badges">
+            <span class="badge">Portal</span>
+            <span class="badge">Auto-position</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="preview-area" style="overflow: hidden;">
+            <div class="playground-mount"></div>
+          </div>
+          <div class="card-status"><span class="status-dot"></span><span class="playground-status-text"></span></div>
+        </div>
+        <div class="card-code">
+          <label>Live Markup</label>
+          <textarea class="editor playground-editor" aria-label="Portal mode markup">&lt;input
+  type="text"
+  data-datepicker
+  data-format="DD/MM/YYYY"
+  data-portal="true"
+  data-show-clear="true"
+  data-theme="light"
+  placeholder="Portal calendar"&gt;</textarea>
+        </div>
+      </section>
+
+      <!-- 11. Hide Calendar Icon (Native Input) -->
+      <section class="card" data-playground data-default-status="Native input without the calendar icon.">
+        <div class="card-head">
+          <h3>Hidden Calendar Icon</h3>
+          <p>Use <code>data-hide-calendar-icon</code> to remove the calendar toggle button. Users can still open the calendar by focusing the input or use it as input-only.</p>
+          <div class="card-badges">
+            <span class="badge">No icon</span>
+            <span class="badge">Native mode</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="preview-area">
+            <div class="playground-mount"></div>
+          </div>
+          <div class="card-status"><span class="status-dot"></span><span class="playground-status-text"></span></div>
+        </div>
+        <div class="card-code">
+          <label>Live Markup</label>
+          <textarea class="editor playground-editor" aria-label="Hidden calendar icon markup">&lt;input
+  type="text"
+  data-datepicker
+  data-input-mode="native"
+  data-format="DD/MM/YYYY"
+  data-hide-calendar-icon="true"
+  data-calendar="true"
+  data-theme="light"
+  placeholder="No calendar icon"&gt;</textarea>
+        </div>
+      </section>
+
+      <!-- 12. Calendar Only (Single Date, no typing) -->
+      <section class="card" data-playground data-default-status="Only select from calendar. No manual input allowed.">
+        <div class="card-head">
+          <h3>Calendar Only (Single Date)</h3>
+          <p>Force users to pick a date only through the calendar popup. The input is read-only. Great for strict date selection workflows.</p>
+          <div class="card-badges">
+            <span class="badge">Calendar only</span>
+            <span class="badge">Single date</span>
+            <span class="badge">Clear + Today</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="preview-area">
+            <div class="playground-mount"></div>
+          </div>
+          <div class="card-status"><span class="status-dot"></span><span class="playground-status-text"></span></div>
+        </div>
+        <div class="card-code">
+          <label>Live Markup</label>
+          <textarea class="editor playground-editor" aria-label="Calendar only single date markup">&lt;input
+  type="text"
+  data-datepicker
+  data-format="DD/MM/YYYY"
+  data-calendar-only="true"
+  data-show-clear="true"
+  data-show-today="true"
+  data-theme="light"
+  placeholder="Pick from calendar"&gt;</textarea>
+        </div>
+      </section>
+
+      <!-- 13. Custom Header -->
+      <section class="card" data-playground data-default-status="Calendar with a custom header message.">
+        <div class="card-head">
+          <h3>Custom Calendar Header</h3>
+          <p>Add custom HTML content above the calendar navigation. Useful for instructions, branding, or context-specific messages.</p>
+          <div class="card-badges">
+            <span class="badge">Custom header</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="preview-area">
+            <div class="playground-mount"></div>
+          </div>
+          <div class="card-status"><span class="status-dot"></span><span class="playground-status-text"></span></div>
+        </div>
+        <div class="card-code">
+          <label>Live Markup</label>
+          <textarea class="editor playground-editor" aria-label="Custom header markup">&lt;input
+  type="text"
+  data-datepicker
+  data-format="DD/MM/YYYY"
+  data-custom-header="&lt;div style='text-align:center;font-weight:700;color:#3b82f6;'&gt;Select your appointment date&lt;/div&gt;"
+  data-show-clear="true"
+  data-theme="light"
+  placeholder="Custom header calendar"&gt;</textarea>
+        </div>
+      </section>
+
+      <!-- 14. Analytics + Touch -->
+      <section class="card" data-playground data-log-events="true" data-default-status="Interact with the picker to see analytics events.">
+        <div class="card-head">
+          <h3>Analytics & Touch Navigation</h3>
+          <p>Emits analytics events for every interaction. Swipe left/right on touch devices to navigate months with slide animation.</p>
+          <div class="card-badges">
+            <span class="badge">Analytics</span>
+            <span class="badge">Touch swipe</span>
+            <span class="badge">Event log</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="preview-area">
+            <div class="playground-mount"></div>
+          </div>
+          <div class="card-status"><span class="status-dot"></span><span class="playground-status-text"></span></div>
+        </div>
+        <div class="card-code">
+          <label>Live Markup</label>
+          <textarea class="editor playground-editor" aria-label="Analytics and touch markup">&lt;input
   type="text"
   data-datepicker
   data-analytics="events"
   data-format="YYYY-MM-DD"
-  placeholder="Open and interact to see analytics events"&gt;</textarea>
-          <div class="playground-log" aria-live="polite"></div>
+  data-slide-animation="true"
+  data-theme="light"
+  placeholder="Open and interact"&gt;</textarea>
+          <div class="event-log" aria-live="polite"></div>
         </div>
       </section>
+
     </main>
 
-    <section class="footer">
-      @elementmints/date demo playground. Source on
+    <footer class="footer">
+      @elementmints/date playground demo &mdash;
+      <a href="https://www.npmjs.com/package/@elementmints/date">npm</a> &middot;
       <a href="https://github.com/ElementMint/date">GitHub</a>
-      and package on
-      <a href="https://www.npmjs.com/package/@elementmints/date">npm</a>.
-    </section>
+    </footer>
   </div>
 
   <script type="module">
-    import { DatePicker, defineElement } from './dist/esm/index.js';
+    const assetBase = window.__DATE_DEMO_ASSET_BASE__ || '.';
+    const { DatePicker, defineElement } = await import(`${assetBase}/dist/esm/index.js`);
 
     defineElement();
 
+    // ---- Theme toggle ----
+    const themeToggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+
+    function getPageTheme() {
+      return localStorage.getItem('dp-demo-theme') || 'light';
+    }
+
+    function applyPageTheme(theme) {
+      html.setAttribute('data-page-theme', theme);
+      localStorage.setItem('dp-demo-theme', theme);
+      // Also update all datepicker themes in editors
+      document.querySelectorAll('.playground-editor').forEach((editor) => {
+        // Only update if using data-theme attribute in markup
+        const dpTheme = theme === 'dark' ? 'dark' : 'light';
+        editor.value = editor.value.replace(/data-theme="(light|dark)"/, `data-theme="${dpTheme}"`);
+      });
+      // Re-render all playgrounds
+      playgrounds.forEach((section) => renderPlayground(section));
+    }
+
+    html.setAttribute('data-page-theme', getPageTheme());
+
+    themeToggle.addEventListener('click', () => {
+      const current = getPageTheme();
+      applyPageTheme(current === 'dark' ? 'light' : 'dark');
+    });
+
+    // ---- Playgrounds ----
     const playgrounds = Array.from(document.querySelectorAll('[data-playground]'));
 
-    function debounce(fn, delay = 250) {
+    function debounce(fn, delay = 300) {
       let timer = 0;
       return (...args) => {
-        window.clearTimeout(timer);
-        timer = window.setTimeout(() => fn(...args), delay);
+        cancelAnimationFrame(timer);
+        timer = requestAnimationFrame(() => {
+          setTimeout(() => fn(...args), delay);
+        });
       };
+    }
+
+    function formatStatus(detail) {
+      if (!detail) return 'Ready.';
+
+      if (detail.mode === 'range' && detail.range) {
+        const start = detail.range.start ? new Date(detail.range.start).toLocaleDateString() : null;
+        const end = detail.range.end ? new Date(detail.range.end).toLocaleDateString() : null;
+        if (start && end) return `Range: ${start} \u2192 ${end}`;
+        if (start) return `Start: ${start} \u2014 select end date`;
+      }
+
+      if (detail.mode === 'week' && detail.range) {
+        const start = detail.range.start ? new Date(detail.range.start).toLocaleDateString() : null;
+        const end = detail.range.end ? new Date(detail.range.end).toLocaleDateString() : null;
+        if (start && end) return `Week: ${start} \u2192 ${end}`;
+      }
+
+      if (detail.mode === 'month' && detail.value) {
+        return `Month: ${detail.value}`;
+      }
+
+      if (detail.value) return `Value: ${detail.value}`;
+      if (detail.time) return `Time: ${detail.time.hour}:${String(detail.time.minute).padStart(2, '0')}${detail.time.period ? ' ' + detail.time.period : ''}`;
+
+      return 'Updated.';
+    }
+
+    function appendLog(section, payload) {
+      const log = section.querySelector('.event-log');
+      if (!log) return;
+      const stamp = new Date().toLocaleTimeString();
+      const line = `[${stamp}] ${payload.action}: ${JSON.stringify(payload, null, 2)}`;
+      log.textContent = `${line}\n\n${log.textContent}`.slice(0, 4000);
+    }
+
+    function updateStatus(section, message) {
+      const target = section.querySelector('.playground-status-text');
+      if (target) target.textContent = message;
     }
 
     function destroyInstances(section) {
       const instances = section._instances || [];
-      instances.forEach((instance) => instance.destroy());
+      for (const instance of instances) instance.destroy();
       section._instances = [];
-    }
-
-    function appendLog(section, payload) {
-      const log = section.querySelector('.playground-log');
-      if (!log) return;
-
-      const stamp = new Date().toLocaleTimeString();
-      const nextLine = `[${stamp}] ${JSON.stringify(payload, null, 2)}`;
-      log.textContent = `${nextLine}\n\n${log.textContent || ''}`.trim();
     }
 
     function renderPlayground(section) {
       const editor = section.querySelector('.playground-editor');
       const mount = section.querySelector('.playground-mount');
-      const log = section.querySelector('.playground-log');
+      const log = section.querySelector('.event-log');
+      const defaultStatus = section.getAttribute('data-default-status') || 'Ready.';
 
       if (!editor || !mount) return;
 
       destroyInstances(section);
       mount.innerHTML = editor.value.trim();
-
-      if (log) {
-        log.textContent = '';
-      }
+      if (log) log.textContent = '';
+      updateStatus(section, defaultStatus);
 
       const inputs = Array.from(mount.querySelectorAll('[data-datepicker]'));
       section._instances = inputs.map((element) => new DatePicker(element));
@@ -456,6 +945,10 @@
     playgrounds.forEach((section) => {
       const editor = section.querySelector('.playground-editor');
       const rerender = debounce(() => renderPlayground(section));
+
+      section.addEventListener('datepicker:change', (event) => {
+        updateStatus(section, formatStatus(event.detail));
+      });
 
       section.addEventListener('datepicker:analytics', (event) => {
         appendLog(section, event.detail);
