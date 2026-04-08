@@ -22,10 +22,12 @@ interface EditableSegment {
 }
 
 /** Configuration for segment limits */
-const SEGMENT_LIMITS: Record<SegmentType, { min: number; max: number }> = {
+const SEGMENT_LIMITS: Record<string, { min: number; max: number }> = {
   day: { min: 1, max: 31 },
   month: { min: 1, max: 12 },
   year: { min: 1, max: 9999 },
+  hour: { min: 0, max: 23 },
+  minute: { min: 0, max: 59 },
 };
 
 /** Placeholder text for each segment type */

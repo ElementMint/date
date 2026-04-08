@@ -76,4 +76,12 @@ export type {
   DateFormatToken,
   WeekDay,
   ValidationRule,
+  SelectionMode,
+  InputMode,
+  AnalyticsMode,
+  CalendarMode,
+  DatePreset,
+  DisabledDateRule,
+  DayData,
+  DateRangeValue,
 } from './core/types';

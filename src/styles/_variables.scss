@@ -6,6 +6,7 @@
   // --- Colors ---
   --dp-primary: #3b82f6;
   --dp-primary-hover: #2563eb;
+  --dp-primary-soft: rgba(59, 130, 246, 0.14);
 
   --dp-bg: #ffffff;
   --dp-surface: #ffffff;
@@ -17,6 +18,7 @@
 
   --dp-error: #ef4444;
   --dp-success: #22c55e;
+  --dp-warning: #f59e0b;
 
   // --- Layout ---
   --dp-radius: 8px;
@@ -30,4 +32,5 @@
 
   // --- Motion ---
   --dp-transition-speed: 150ms;
+  --dp-slide-speed: 280ms;
 }
